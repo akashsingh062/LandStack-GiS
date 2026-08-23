@@ -399,6 +399,49 @@ a:hover { text-decoration: underline; }
   margin-top: 4px;
 }
 
+/* ── Service Grid & Cards ── */
+.service-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: var(--space-md);
+}
+
+.service-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md);
+  text-decoration: none;
+  display: flex;
+  flex-direction: column;
+  color: inherit;
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-normal);
+}
+
+.service-card:hover {
+  border-color: var(--brand-primary);
+  box-shadow: 0 8px 24px rgba(2, 132, 199, 0.12);
+}
+
+.service-icon {
+  margin-bottom: 10px;
+  font-size: 24px;
+}
+
+.service-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.service-desc {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
 /* ── Badges ── */
 .badge {
   display: inline-flex;

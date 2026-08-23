@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
 import { calculateSlaStatus } from "@/lib/workflow";
 import { useAuth } from "@/lib/security/auth-context";
 import { useLanguage } from "@/lib/i18n/language-context";
@@ -184,9 +185,19 @@ export default function OfficerPortal() {
   const breachedCount = applications.filter((a) => a.sla_status === "SLA_BREACHED" || a.escalated).length;
 
   return (
-    <div className="app-content animate-in">
+    <motion.div
+      className="app-content"
+      initial={{ opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35, ease: "easeOut" }}
+    >
       {/* Header */}
-      <div className="page-header">
+      <motion.div
+        className="page-header"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+      >
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
             <span style={{ fontSize: 24 }}>👨‍💼</span>
@@ -212,23 +223,40 @@ export default function OfficerPortal() {
             🧠 {t("nav.intelligence")}
           </Link>
         </div>
-      </div>
+      </motion.div>
 
       {/* SLA & Workflow Metrics */}
-      <div className="stat-grid" style={{ marginBottom: "var(--space-lg)" }}>
+      <motion.div
+        className="stat-grid"
+        style={{ marginBottom: "var(--space-lg)" }}
+        initial="initial"
+        animate="animate"
+        variants={{
+          initial: {},
+          animate: { transition: { staggerChildren: 0.08 } },
+        }}
+      >
         {[
           { icon: "📋", value: pendingCount, label: t("stat.pending_queue"), bg: "var(--status-warning-bg)" },
           { icon: "⏱️", value: applications.filter(a => a.status === "UNDER_REVIEW").length, label: t("stat.in_review"), bg: "var(--status-info-bg)" },
           { icon: "✅", value: approvedCount, label: t("stat.approved_certified"), bg: "var(--status-success-bg)" },
           { icon: "🚨", value: breachedCount, label: t("stat.sla_breaches"), bg: "var(--status-error-bg)" },
         ].map((s) => (
-          <div key={s.label} className="stat-card">
+          <motion.div
+            key={s.label}
+            className="stat-card"
+            variants={{
+              initial: { opacity: 0, y: 12 },
+              animate: { opacity: 1, y: 0 },
+            }}
+            whileHover={{ y: -4, transition: { duration: 0.18 } }}
+          >
             <div className="stat-icon" style={{ background: s.bg }}>{s.icon}</div>
             <div className="stat-value">{s.value}</div>
             <div className="stat-label">{s.label}</div>
-          </div>
+          </motion.div>
         ))}
-      </div>
+      </motion.div>
 
       {/* Department Filter Tabs */}
       <div style={{ display: "flex", gap: 8, marginBottom: "var(--space-md)", borderBottom: "1px solid var(--border-color)", paddingBottom: 10, overflowX: "auto", whiteSpace: "nowrap" }}>
@@ -524,49 +552,63 @@ export default function OfficerPortal() {
       </div>
 
       {/* Action Remark Modal */}
-      {modalMode && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
-          <div className="card" style={{ width: 480, background: "var(--bg-card)", border: "1px solid var(--border-color)" }}>
-            <h3 className="card-title" style={{ marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
-              {modalMode === "APPROVE" && <><Check size={16} color="var(--status-success)" /> Approve & Issue Order</>}
-              {modalMode === "REJECT" && <><X size={16} color="var(--status-error)" /> Reject Application (Mandatory Reason)</>}
-              {modalMode === "REQUEST_INFO" && <><FileQuestion size={16} color="var(--status-warning)" /> Request Additional Documentation</>}
-              {modalMode === "ESCALATE" && <><AlertTriangle size={16} color="var(--status-error)" /> Escalate SLA Breach to Supervisor</>}
-            </h3>
-            <p style={{ fontSize: 12, color: "var(--text-secondary)", marginBottom: 14 }}>
-              {modalMode === "APPROVE" && "Enter officer approval notes. An immutable audit record will be created and the applicant notified."}
-              {modalMode === "REJECT" && "Government guidelines require a clear, legally sound reason for rejecting citizen applications."}
-              {modalMode === "REQUEST_INFO" && "Specify exactly what documents or clarifications are required from the citizen."}
-              {modalMode === "ESCALATE" && "Describe why the case exceeded statutory turnaround limits."}
-            </p>
+      <AnimatePresence>
+        {modalMode && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, backdropFilter: "blur(4px)" }}
+          >
+            <motion.div
+              initial={{ scale: 0.92, opacity: 0, y: 10 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.92, opacity: 0, y: 10 }}
+              transition={{ type: "spring", damping: 25, stiffness: 350 }}
+              className="card"
+              style={{ width: 480, background: "var(--bg-card)", border: "1px solid var(--border-color)", boxShadow: "0 20px 40px rgba(0,0,0,0.4)" }}
+            >
+              <h3 className="card-title" style={{ marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
+                {modalMode === "APPROVE" && <><Check size={16} color="var(--status-success)" /> Approve & Issue Order</>}
+                {modalMode === "REJECT" && <><X size={16} color="var(--status-error)" /> Reject Application (Mandatory Reason)</>}
+                {modalMode === "REQUEST_INFO" && <><FileQuestion size={16} color="var(--status-warning)" /> Request Additional Documentation</>}
+                {modalMode === "ESCALATE" && <><AlertTriangle size={16} color="var(--status-error)" /> Escalate SLA Breach to Supervisor</>}
+              </h3>
+              <p style={{ fontSize: 12, color: "var(--text-secondary)", marginBottom: 14 }}>
+                {modalMode === "APPROVE" && "Enter officer approval notes. An immutable audit record will be created and the applicant notified."}
+                {modalMode === "REJECT" && "Government guidelines require a clear, legally sound reason for rejecting citizen applications."}
+                {modalMode === "REQUEST_INFO" && "Specify exactly what documents or clarifications are required from the citizen."}
+                {modalMode === "ESCALATE" && "Describe why the case exceeded statutory turnaround limits."}
+              </p>
 
-            <textarea
-              style={{ width: "100%", height: 100, background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: 6, color: "var(--text-primary)", padding: 8, fontSize: 12, marginBottom: 16 }}
-              placeholder="Enter remarks or structured reason here..."
-              value={actionRemarks}
-              onChange={(e) => setActionRemarks(e.target.value)}
-            />
+              <textarea
+                style={{ width: "100%", height: 100, background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: 6, color: "var(--text-primary)", padding: 8, fontSize: 12, marginBottom: 16 }}
+                placeholder="Enter remarks or structured reason here..."
+                value={actionRemarks}
+                onChange={(e) => setActionRemarks(e.target.value)}
+              />
 
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
-              <button className="btn btn-outline" onClick={() => setModalMode(null)} disabled={actionLoading}>
-                Cancel
-              </button>
-              <button
-                className="btn btn-primary"
-                disabled={actionLoading || (modalMode === "REJECT" && !actionRemarks.trim())}
-                onClick={() => {
-                  if (modalMode === "APPROVE") executeAction("APPROVED", actionRemarks || "Application verified and approved.");
-                  if (modalMode === "REJECT") executeAction("REJECTED", actionRemarks);
-                  if (modalMode === "REQUEST_INFO") executeAction("ACTION_REQUIRED", actionRemarks || "Additional documentation required.");
-                  if (modalMode === "ESCALATE") executeAction("UNDER_REVIEW", "Escalated due to statutory SLA breach", { escalated: true, escalation_reason: actionRemarks });
-                }}
-              >
-                {actionLoading ? "Processing..." : "Confirm & Submit Action"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+                <button className="btn btn-outline" onClick={() => setModalMode(null)} disabled={actionLoading}>
+                  Cancel
+                </button>
+                <button
+                  className="btn btn-primary"
+                  disabled={actionLoading || (modalMode === "REJECT" && !actionRemarks.trim())}
+                  onClick={() => {
+                    if (modalMode === "APPROVE") executeAction("APPROVED", actionRemarks || "Application verified and approved.");
+                    if (modalMode === "REJECT") executeAction("REJECTED", actionRemarks);
+                    if (modalMode === "REQUEST_INFO") executeAction("ACTION_REQUIRED", actionRemarks || "Additional documentation required.");
+                    if (modalMode === "ESCALATE") executeAction("UNDER_REVIEW", "Escalated due to statutory SLA breach", { escalated: true, escalation_reason: actionRemarks });
+                  }}
+                >
+                  {actionLoading ? "Processing..." : "Confirm & Submit Action"}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
   );
 }

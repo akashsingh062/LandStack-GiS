@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { motion } from "framer-motion";
 import * as Lucide from "lucide-react";
 import { useLanguage } from "@/lib/i18n/language-context";
 
@@ -75,33 +76,60 @@ export default function ServicesPage() {
   const { t } = useLanguage();
 
   return (
-    <div className="app-content animate-in">
-      <div className="page-header">
+    <motion.div
+      className="app-content"
+      initial={{ opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35, ease: "easeOut" }}
+    >
+      <motion.div
+        className="page-header"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+      >
         <div>
           <h1 className="page-title">🏛️ {t("services.title")}</h1>
           <p className="page-subtitle">{t("services.subtitle")}</p>
         </div>
-      </div>
+      </motion.div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "var(--space-md)" }}>
+      <motion.div
+        style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "var(--space-md)" }}
+        initial="initial"
+        animate="animate"
+        variants={{
+          initial: {},
+          animate: { transition: { staggerChildren: 0.06 } },
+        }}
+      >
         {SERVICES.map((s) => (
-          <Link key={s.id} href={`/services/${s.id}`} style={{ textDecoration: "none", color: "inherit" }}>
-            <div className="card card-clickable" style={{ height: "100%" }}>
-              <div style={{ display: "flex", alignItems: "flex-start", gap: "var(--space-md)" }}>
-                <div style={{ fontSize: 28, flexShrink: 0, marginTop: 2 }}>{s.icon}</div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)", marginBottom: 4 }}>{s.name}</div>
-                  <div style={{ fontSize: 13, color: "var(--text-secondary)", marginBottom: "var(--space-sm)" }}>{s.desc}</div>
-                  <div style={{ display: "flex", gap: "var(--space-sm)", flexWrap: "wrap" }}>
-                    <span className="badge badge-info">{s.dept}</span>
-                    <span className="badge badge-neutral" style={{ display: "flex", alignItems: "center", gap: 4 }}><Lucide.Clock size={10} /> {s.time}</span>
+          <motion.div
+            key={s.id}
+            variants={{
+              initial: { opacity: 0, y: 14 },
+              animate: { opacity: 1, y: 0 },
+            }}
+            whileHover={{ y: -4, scale: 1.015, transition: { duration: 0.18 } }}
+          >
+            <Link href={`/services/${s.id}`} style={{ textDecoration: "none", color: "inherit", display: "block", height: "100%" }}>
+              <div className="card card-clickable" style={{ height: "100%" }}>
+                <div style={{ display: "flex", alignItems: "flex-start", gap: "var(--space-md)" }}>
+                  <div style={{ fontSize: 28, flexShrink: 0, marginTop: 2, color: "var(--brand-primary)" }}>{s.icon}</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)", marginBottom: 4 }}>{s.name}</div>
+                    <div style={{ fontSize: 13, color: "var(--text-secondary)", marginBottom: "var(--space-sm)" }}>{s.desc}</div>
+                    <div style={{ display: "flex", gap: "var(--space-sm)", flexWrap: "wrap" }}>
+                      <span className="badge badge-info">{s.dept}</span>
+                      <span className="badge badge-neutral" style={{ display: "flex", alignItems: "center", gap: 4 }}><Lucide.Clock size={10} /> {s.time}</span>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </Link>
+            </Link>
+          </motion.div>
         ))}
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }

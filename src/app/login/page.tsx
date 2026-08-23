@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
 import { useAuth, DEMO_PERSONAS, UserPersona, getLucideIcon } from "@/lib/security/auth-context";
 import { useLanguage } from "@/lib/i18n/language-context";
 import { LanguageSelector } from "@/components/LanguageSelector";
@@ -32,18 +33,32 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="app-content animate-in" style={{ maxWidth: 1180, margin: "0 auto", padding: "var(--space-2xl) var(--space-lg)" }}>
+    <motion.div
+      className="app-content"
+      initial={{ opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35, ease: "easeOut" }}
+      style={{ maxWidth: 1180, margin: "0 auto", padding: "var(--space-2xl) var(--space-lg)" }}
+    >
       {/* Top Language Bar */}
       <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 16 }}>
         <LanguageSelector variant="compact" />
       </div>
 
       {/* Header Banner */}
-      <div style={{ textAlign: "center", marginBottom: "var(--space-2xl)" }}>
+      <motion.div
+        style={{ textAlign: "center", marginBottom: "var(--space-2xl)" }}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+      >
         <div style={{ display: "inline-flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-          <div style={{ width: 48, height: 48, borderRadius: 14, background: "var(--brand-primary)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 16px rgba(59, 130, 246, 0.4)" }}>
+          <motion.div
+            whileHover={{ rotate: 10, scale: 1.1 }}
+            style={{ width: 48, height: 48, borderRadius: 14, background: "var(--brand-primary)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 16px rgba(59, 130, 246, 0.4)" }}
+          >
             <Lucide.Building2 size={24} color="#fff" />
-          </div>
+          </motion.div>
           <span style={{ fontSize: 30, fontWeight: 900, letterSpacing: "-0.03em" }}>LANDSTACK</span>
           <span className="badge badge-info" style={{ fontSize: 11, fontWeight: 700 }}>RBAC & ABAC Engine</span>
         </div>
@@ -78,29 +93,44 @@ export default function LoginPage() {
         </div>
 
         {authFeedback && (
-          <div
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
             style={{
               marginTop: 12,
               color: "#34d399",
               fontSize: 13,
               fontWeight: 600,
-              animation: "fadeIn 0.2s ease",
             }}
           >
             ✓ {authFeedback}
-          </div>
+          </motion.div>
         )}
-      </div>
+      </motion.div>
 
       {/* Personas Grid */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(290px, 1fr))", gap: "var(--space-md)" }}>
+      <motion.div
+        style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(290px, 1fr))", gap: "var(--space-md)" }}
+        initial="initial"
+        animate="animate"
+        variants={{
+          initial: {},
+          animate: { transition: { staggerChildren: 0.06 } },
+        }}
+      >
         {DEMO_PERSONAS.map((account) => {
           const isCurrentActive = currentUser.id === account.id || currentUser.role === account.role;
           const isSelected = selectedPersona.id === account.id;
 
           return (
-            <div
+            <motion.div
               key={account.id}
+              variants={{
+                initial: { opacity: 0, y: 14 },
+                animate: { opacity: 1, y: 0 },
+              }}
+              whileHover={{ y: -4, scale: 1.02, transition: { duration: 0.18 } }}
+              whileTap={{ scale: 0.98 }}
               className="card"
               style={{
                 cursor: "pointer",
@@ -114,8 +144,6 @@ export default function LoginPage() {
                   : isSelected
                   ? "var(--brand-gradient-subtle)"
                   : "var(--bg-secondary)",
-                transition: "all 0.2s ease",
-                transform: isCurrentActive || isSelected ? "translateY(-3px)" : "none",
                 display: "flex",
                 flexDirection: "column",
                 justifyContent: "space-between",
@@ -189,10 +217,10 @@ export default function LoginPage() {
                     : `Sign in as ${account.name} →`}
                 </button>
               </div>
-            </div>
+            </motion.div>
           );
         })}
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }

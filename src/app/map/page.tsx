@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
 import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import apiClient from "@/lib/api-client";
@@ -781,76 +782,85 @@ function MapContent() {
       {/* Main Map Body Container */}
       <div style={{ display: "flex", flex: 1, position: "relative", overflow: "hidden", height: "calc(100% - 54px)" }}>
         {/* 2. Left Sidebar / Mobile Slide-Up Modal: LAYER CONTROL */}
-        {showLayers && (
-          <>
-            {isMobile && (
-              <div
-                onClick={() => setShowLayers(false)}
-                style={{ position: "absolute", inset: 0, background: "rgba(15, 23, 42, 0.4)", zIndex: 45, backdropFilter: "blur(2px)" }}
-              />
-            )}
-            <aside
-              style={{
-                width: isMobile ? "100%" : 250,
-                position: isMobile ? "absolute" : "relative",
-                bottom: isMobile ? 0 : "auto",
-                left: 0,
-                right: isMobile ? 0 : "auto",
-                maxHeight: isMobile ? "75vh" : "100%",
-                background: "rgba(255, 255, 255, 0.98)",
-                borderRight: isMobile ? "none" : "1px solid #e2e8f0",
-                borderTop: isMobile ? "1px solid #cbd5e1" : "none",
-                borderRadius: isMobile ? "16px 16px 0 0" : 0,
-                backdropFilter: "blur(16px)",
-                zIndex: 50,
-                display: "flex",
-                flexDirection: "column",
-                overflowY: "auto",
-                boxShadow: isMobile ? "0 -8px 30px rgba(0,0,0,0.18)" : "2px 0 12px rgba(0,0,0,0.04)",
-              }}
-            >
+        <AnimatePresence>
+          {showLayers && (
+            <>
               {isMobile && (
-                <div style={{ width: 36, height: 4, background: "#cbd5e1", borderRadius: 2, margin: "8px auto 2px" }} />
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  onClick={() => setShowLayers(false)}
+                  style={{ position: "absolute", inset: 0, background: "rgba(15, 23, 42, 0.4)", zIndex: 45, backdropFilter: "blur(2px)" }}
+                />
               )}
-              <div style={{ padding: "10px 14px 8px", borderBottom: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.08em", color: "#64748b", textTransform: "uppercase" }}>LAYER CONTROL</span>
-                <button onClick={() => setShowLayers(false)} style={{ background: "transparent", border: "none", color: "#94a3b8", cursor: "pointer", fontSize: 14, padding: 4, display: "flex", alignItems: "center", justifyContent: "center" }}><X size={14} /></button>
-              </div>
+              <motion.aside
+                initial={isMobile ? { y: "100%", opacity: 0 } : { x: -260, opacity: 0 }}
+                animate={{ x: 0, y: 0, opacity: 1 }}
+                exit={isMobile ? { y: "100%", opacity: 0 } : { x: -260, opacity: 0 }}
+                transition={{ type: "spring", damping: 26, stiffness: 300 }}
+                style={{
+                  width: isMobile ? "100%" : 250,
+                  position: isMobile ? "absolute" : "relative",
+                  bottom: isMobile ? 0 : "auto",
+                  left: 0,
+                  right: isMobile ? 0 : "auto",
+                  maxHeight: isMobile ? "75vh" : "100%",
+                  background: "rgba(255, 255, 255, 0.98)",
+                  borderRight: isMobile ? "none" : "1px solid #e2e8f0",
+                  borderTop: isMobile ? "1px solid #cbd5e1" : "none",
+                  borderRadius: isMobile ? "16px 16px 0 0" : 0,
+                  backdropFilter: "blur(16px)",
+                  zIndex: 50,
+                  display: "flex",
+                  flexDirection: "column",
+                  overflowY: "auto",
+                  boxShadow: isMobile ? "0 -8px 30px rgba(0,0,0,0.18)" : "2px 0 12px rgba(0,0,0,0.04)",
+                }}
+              >
+                {isMobile && (
+                  <div style={{ width: 36, height: 4, background: "#cbd5e1", borderRadius: 2, margin: "8px auto 2px" }} />
+                )}
+                <div style={{ padding: "10px 14px 8px", borderBottom: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.08em", color: "#64748b", textTransform: "uppercase" }}>LAYER CONTROL</span>
+                  <button onClick={() => setShowLayers(false)} style={{ background: "transparent", border: "none", color: "#94a3b8", cursor: "pointer", fontSize: 14, padding: 4, display: "flex", alignItems: "center", justifyContent: "center" }}><X size={14} /></button>
+                </div>
 
-              {/* Base Layers */}
-              <div style={{ padding: "10px 14px", borderBottom: "1px solid #f1f5f9" }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>BASE LAYERS</div>
-                {BASE_LAYERS_CONFIG.map((layer) => (
-                  <label key={layer.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0", cursor: "pointer", fontSize: 12, color: activeBaseLayers[layer.id] ? "#0f172a" : "#64748b" }}>
-                    <input
-                      type="checkbox"
-                      checked={Boolean(activeBaseLayers[layer.id])}
-                      onChange={(e) => toggleBaseLayer(layer.id, e.target.checked)}
-                      style={{ accentColor: "#10b981", cursor: "pointer", width: 16, height: 16 }}
-                    />
-                    <span>{layer.label}</span>
-                  </label>
-                ))}
-              </div>
+                {/* Base Layers */}
+                <div style={{ padding: "10px 14px", borderBottom: "1px solid #f1f5f9" }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>BASE LAYERS</div>
+                  {BASE_LAYERS_CONFIG.map((layer) => (
+                    <label key={layer.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0", cursor: "pointer", fontSize: 12, color: activeBaseLayers[layer.id] ? "#0f172a" : "#64748b" }}>
+                      <input
+                        type="checkbox"
+                        checked={Boolean(activeBaseLayers[layer.id])}
+                        onChange={(e) => toggleBaseLayer(layer.id, e.target.checked)}
+                        style={{ accentColor: "#10b981", cursor: "pointer", width: 16, height: 16 }}
+                      />
+                      <span>{layer.label}</span>
+                    </label>
+                  ))}
+                </div>
 
-              {/* Governance Layers */}
-              <div style={{ padding: "10px 14px", borderBottom: "1px solid #f1f5f9" }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>GOVERNANCE LAYERS</div>
-                {GOVERNANCE_LAYERS_CONFIG.map((layer) => (
-                  <label key={layer.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0", cursor: "pointer", fontSize: 12, color: activeGovLayers[layer.id] ? "#0f172a" : "#64748b" }}>
-                    <input
-                      type="checkbox"
-                      checked={Boolean(activeGovLayers[layer.id])}
-                      onChange={(e) => toggleGovernanceLayer(layer.id, e.target.checked)}
-                      style={{ accentColor: layer.color || "#10b981", cursor: "pointer", width: 16, height: 16 }}
-                    />
-                    <span>{layer.label}</span>
-                  </label>
-                ))}
-              </div>
-            </aside>
-          </>
-        )}
+                {/* Governance Layers */}
+                <div style={{ padding: "10px 14px", borderBottom: "1px solid #f1f5f9" }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>GOVERNANCE LAYERS</div>
+                  {GOVERNANCE_LAYERS_CONFIG.map((layer) => (
+                    <label key={layer.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0", cursor: "pointer", fontSize: 12, color: activeGovLayers[layer.id] ? "#0f172a" : "#64748b" }}>
+                      <input
+                        type="checkbox"
+                        checked={Boolean(activeGovLayers[layer.id])}
+                        onChange={(e) => toggleGovernanceLayer(layer.id, e.target.checked)}
+                        style={{ accentColor: layer.color || "#10b981", cursor: "pointer", width: 16, height: 16 }}
+                      />
+                      <span>{layer.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </motion.aside>
+            </>
+          )}
+        </AnimatePresence>
 
         {/* 3. Central Map Canvas with Floating Overlays */}
         <div style={{ flex: 1, position: "relative", height: "100%", width: "100%" }}>
@@ -933,28 +943,33 @@ function MapContent() {
         </div>
 
         {/* 4. Right Slide-Out Panel / Mobile Bottom Sheet: PARCEL DETAILS */}
-        {(selectedParcel || loading) && (
-          <aside
-            style={{
-              width: isMobile ? "100%" : 350,
-              position: isMobile ? "absolute" : "relative",
-              bottom: isMobile ? 0 : "auto",
-              left: isMobile ? 0 : "auto",
-              right: 0,
-              height: isMobile ? "68vh" : "100%",
-              maxHeight: isMobile ? "68vh" : "100%",
-              background: "#ffffff",
-              borderLeft: isMobile ? "none" : "1px solid #e2e8f0",
-              borderTop: isMobile ? "1px solid #cbd5e1" : "none",
-              borderRadius: isMobile ? "18px 18px 0 0" : 0,
-              backdropFilter: "blur(16px)",
-              zIndex: 40,
-              display: "flex",
-              flexDirection: "column",
-              overflow: "hidden",
-              boxShadow: isMobile ? "0 -8px 30px rgba(0,0,0,0.2)" : "-4px 0 24px rgba(0,0,0,0.08)",
-            }}
-          >
+        <AnimatePresence>
+          {(selectedParcel || loading) && (
+            <motion.aside
+              initial={isMobile ? { y: "100%", opacity: 0 } : { x: 360, opacity: 0 }}
+              animate={{ x: 0, y: 0, opacity: 1 }}
+              exit={isMobile ? { y: "100%", opacity: 0 } : { x: 360, opacity: 0 }}
+              transition={{ type: "spring", damping: 28, stiffness: 300 }}
+              style={{
+                width: isMobile ? "100%" : 350,
+                position: isMobile ? "absolute" : "relative",
+                bottom: isMobile ? 0 : "auto",
+                left: isMobile ? 0 : "auto",
+                right: 0,
+                height: isMobile ? "68vh" : "100%",
+                maxHeight: isMobile ? "68vh" : "100%",
+                background: "#ffffff",
+                borderLeft: isMobile ? "none" : "1px solid #e2e8f0",
+                borderTop: isMobile ? "1px solid #cbd5e1" : "none",
+                borderRadius: isMobile ? "18px 18px 0 0" : 0,
+                backdropFilter: "blur(16px)",
+                zIndex: 40,
+                display: "flex",
+                flexDirection: "column",
+                overflow: "hidden",
+                boxShadow: isMobile ? "0 -8px 30px rgba(0,0,0,0.2)" : "-4px 0 24px rgba(0,0,0,0.08)",
+              }}
+            >
             {isMobile && (
               <div style={{ width: 36, height: 4, background: "#cbd5e1", borderRadius: 2, margin: "8px auto 2px", flexShrink: 0 }} />
             )}
@@ -1353,8 +1368,9 @@ function MapContent() {
                 </div>
               </>
             ) : null}
-          </aside>
+          </motion.aside>
         )}
+        </AnimatePresence>
       </div>
     </div>
   );

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/lib/security/auth-context";
 import { useLanguage } from "@/lib/i18n/language-context";
 import apiClient from "@/lib/api-client";
@@ -93,8 +94,18 @@ export default function ApplicationsPage() {
   const history = selectedDetail?.history || [];
 
   return (
-    <div className="app-content animate-in">
-      <div className="page-header">
+    <motion.div
+      className="app-content"
+      initial={{ opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35, ease: "easeOut" }}
+    >
+      <motion.div
+        className="page-header"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+      >
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
             <span style={{ fontSize: 24 }}>{currentUser.role === "CITIZEN" ? "📋" : "👨‍💼"}</span>
@@ -115,7 +126,7 @@ export default function ApplicationsPage() {
             <Link href="/officer" className="btn btn-primary">Open Officer Desk →</Link>
           )}
         </div>
-      </div>
+      </motion.div>
 
       {loading ? (
         <div style={{ textAlign: "center", padding: "var(--space-2xl)", color: "var(--text-secondary)" }}>
@@ -125,13 +136,26 @@ export default function ApplicationsPage() {
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: app ? "repeat(auto-fit, minmax(320px, 1fr))" : "1fr", gap: "var(--space-md)" }}>
           {/* Application List */}
-          <div style={{ display: "grid", gap: "var(--space-md)" }}>
+          <motion.div
+            style={{ display: "grid", gap: "var(--space-md)" }}
+            initial="initial"
+            animate="animate"
+            variants={{
+              initial: {},
+              animate: { transition: { staggerChildren: 0.07 } },
+            }}
+          >
             {applications.map((a) => {
               const steps = getSteps(a.status);
               const isSelected = selectedId === a.application_no;
               return (
-                <div
+                <motion.div
                   key={a.application_no}
+                  variants={{
+                    initial: { opacity: 0, y: 12 },
+                    animate: { opacity: 1, y: 0 },
+                  }}
+                  whileHover={{ y: -3, transition: { duration: 0.15 } }}
                   className="card card-clickable"
                   style={isSelected ? { borderColor: "var(--brand-primary)", boxShadow: "var(--shadow-glow)" } : {}}
                   onClick={() => setSelectedId(a.application_no)}
@@ -168,78 +192,87 @@ export default function ApplicationsPage() {
                       </div>
                     ))}
                   </div>
-                </div>
+                </motion.div>
               );
             })}
-          </div>
+          </motion.div>
 
           {/* Detail Panel */}
-          {app && (
-            <div className="card animate-slide" style={{ height: "fit-content" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--space-lg)" }}>
-                <div>
-                  <h2 style={{ fontSize: 16, fontWeight: 700 }}>{app.service_type}</h2>
-                  <span style={{ fontSize: 13, color: "var(--text-accent)", fontFamily: "monospace" }}>{app.application_no}</span>
-                </div>
-                <button className="btn btn-ghost" onClick={() => setSelectedId(null)}>✕</button>
-              </div>
-
-              <div style={{ marginBottom: "var(--space-lg)" }}>
-                {[
-                  ["Parcel ULPIN", app.parcel_ulpin || "—"],
-                  ["Applicant", app.applicant_name],
-                  ["Department", app.department],
-                  ["Assigned Officer", app.assigned_officer || "Pending Assignment"],
-                  ["Purpose", app.purpose || "—"],
-                  ["Submitted", new Date(app.created_at).toLocaleString()],
-                  ["Last Updated", new Date(app.updated_at).toLocaleString()],
-                ].map(([l, v]) => (
-                  <div key={l} className="field-row">
-                    <span className="field-label">{l}</span>
-                    <span className="field-value">{v}</span>
+          <AnimatePresence>
+            {app && (
+              <motion.div
+                initial={{ opacity: 0, x: 24 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 24 }}
+                transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                className="card"
+                style={{ height: "fit-content" }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--space-lg)" }}>
+                  <div>
+                    <h2 style={{ fontSize: 16, fontWeight: 700 }}>{app.service_type}</h2>
+                    <span style={{ fontSize: 13, color: "var(--text-accent)", fontFamily: "monospace" }}>{app.application_no}</span>
                   </div>
-                ))}
-                <div className="field-row">
-                  <span className="field-label">Status</span>
-                  <span className={`badge ${STATUS_MAP[app.status]?.class || "badge-neutral"}`}>
-                    {STATUS_MAP[app.status]?.label || app.status}
-                  </span>
+                  <button className="btn btn-ghost" onClick={() => setSelectedId(null)}>✕</button>
                 </div>
-              </div>
 
-              {app.parcel_ulpin && (
-                <div style={{ display: "flex", gap: "var(--space-sm)", marginBottom: "var(--space-lg)" }}>
-                  <Link href={`/parcel/${app.parcel_ulpin}`} className="btn btn-secondary btn-sm">
-                    View Parcel Land 360°
-                  </Link>
-                  <Link href={`/map?parcel=${app.parcel_ulpin}`} className="btn btn-secondary btn-sm">
-                    View on Map
-                  </Link>
+                <div style={{ marginBottom: "var(--space-lg)" }}>
+                  {[
+                    ["Parcel ULPIN", app.parcel_ulpin || "—"],
+                    ["Applicant", app.applicant_name],
+                    ["Department", app.department],
+                    ["Assigned Officer", app.assigned_officer || "Pending Assignment"],
+                    ["Purpose", app.purpose || "—"],
+                    ["Submitted", new Date(app.created_at).toLocaleString()],
+                    ["Last Updated", new Date(app.updated_at).toLocaleString()],
+                  ].map(([l, v]) => (
+                    <div key={l} className="field-row">
+                      <span className="field-label">{l}</span>
+                      <span className="field-value">{v}</span>
+                    </div>
+                  ))}
+                  <div className="field-row">
+                    <span className="field-label">Status</span>
+                    <span className={`badge ${STATUS_MAP[app.status]?.class || "badge-neutral"}`}>
+                      {STATUS_MAP[app.status]?.label || app.status}
+                    </span>
+                  </div>
                 </div>
-              )}
 
-              <h3 className="section-title">Activity Timeline</h3>
-              <div style={{ marginTop: "var(--space-sm)" }}>
-                {history.length > 0 ? (
-                  history.map((h: any, i: number) => (
-                    <div key={i} style={{ display: "flex", gap: "var(--space-md)", padding: "var(--space-sm) 0", borderLeft: "2px solid var(--border-default)", paddingLeft: "var(--space-md)", marginLeft: 6, position: "relative" }}>
-                      <div style={{ position: "absolute", left: -5, top: 10, width: 8, height: 8, borderRadius: "50%", background: i === 0 ? "var(--brand-primary)" : "var(--border-strong)" }} />
-                      <div>
-                        <div style={{ fontSize: 13, color: "var(--text-primary)" }}>{h.action}</div>
-                        <div style={{ fontSize: 11, color: "var(--text-tertiary)" }}>
-                          {new Date(h.created_at).toLocaleString()} • {h.performed_by}
+                {app.parcel_ulpin && (
+                  <div style={{ display: "flex", gap: "var(--space-sm)", marginBottom: "var(--space-lg)" }}>
+                    <Link href={`/parcel/${app.parcel_ulpin}`} className="btn btn-secondary btn-sm">
+                      View Parcel Land 360°
+                    </Link>
+                    <Link href={`/map?parcel=${app.parcel_ulpin}`} className="btn btn-secondary btn-sm">
+                      View on Map
+                    </Link>
+                  </div>
+                )}
+
+                <h3 className="section-title">Activity Timeline</h3>
+                <div style={{ marginTop: "var(--space-sm)" }}>
+                  {history.length > 0 ? (
+                    history.map((h: any, i: number) => (
+                      <div key={i} style={{ display: "flex", gap: "var(--space-md)", padding: "var(--space-sm) 0", borderLeft: "2px solid var(--border-default)", paddingLeft: "var(--space-md)", marginLeft: 6, position: "relative" }}>
+                        <div style={{ position: "absolute", left: -5, top: 10, width: 8, height: 8, borderRadius: "50%", background: i === 0 ? "var(--brand-primary)" : "var(--border-strong)" }} />
+                        <div>
+                          <div style={{ fontSize: 13, color: "var(--text-primary)" }}>{h.action}</div>
+                          <div style={{ fontSize: 11, color: "var(--text-tertiary)" }}>
+                            {new Date(h.created_at).toLocaleString()} • {h.performed_by}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))
-                ) : (
-                  <p style={{ color: "var(--text-secondary)", fontSize: 12 }}>No history entries logged yet</p>
-                )}
-              </div>
-            </div>
-          )}
+                    ))
+                  ) : (
+                    <p style={{ color: "var(--text-secondary)", fontSize: 12 }}>No history entries logged yet</p>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       )}
-    </div>
+    </motion.div>
   );
 }
