@@ -848,26 +848,6 @@ function MapContent() {
                   </label>
                 ))}
               </div>
-
-              {/* Land Classification Legend */}
-              <div style={{ padding: "10px 14px", borderBottom: "1px solid #f1f5f9" }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>LAND CLASSIFICATION</div>
-                {[
-                  { label: "Agricultural", color: LAND_TYPE_COLORS.Agricultural },
-                  { label: "Residential", color: LAND_TYPE_COLORS.Residential },
-                  { label: "Commercial", color: LAND_TYPE_COLORS.Commercial },
-                  { label: "Industrial", color: LAND_TYPE_COLORS.Industrial },
-                  { label: "Forest", color: LAND_TYPE_COLORS.Forest },
-                  { label: "Government Land", color: LAND_TYPE_COLORS["Government Land"] },
-                  { label: "Water Body", color: LAND_TYPE_COLORS["Water Body"] },
-                  { label: "Wasteland", color: LAND_TYPE_COLORS.Wasteland },
-                ].map((item) => (
-                  <div key={item.label} style={{ display: "flex", alignItems: "center", gap: 8, padding: "2px 0", fontSize: 11, color: "#334155" }}>
-                    <span style={{ width: 10, height: 10, borderRadius: 2, background: item.color }} />
-                    <span>{item.label}</span>
-                  </div>
-                ))}
-              </div>
             </aside>
           </>
         )}
