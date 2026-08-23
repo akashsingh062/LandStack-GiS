@@ -539,14 +539,6 @@ function MapContent() {
         }
       }
 
-      // Auto-select plot 1051 or first plot if none selected
-      if (!selectedParcelRef.current && geojson.features?.length > 0) {
-        const target = geojson.features.find((f: any) => String(f.properties?.survey_number) === "1051") || geojson.features[0];
-        if (target) {
-          inspectParcel(target.properties.parcel_id);
-        }
-      }
-
       // Re-apply enabled governance and base layers
       Object.entries(activeGovLayersRef.current).forEach(([layerId, enabled]) => {
         if (enabled) {
@@ -1012,13 +1004,16 @@ function MapContent() {
                       )}
                     </div>
                     <button
+                      type="button"
+                      className="btn-close-parcel"
+                      aria-label="Close Parcel Details"
                       onClick={() => {
                         setSelectedParcel(null);
                         mapRef.current?.setFilter("parcels-highlight", ["==", "parcel_id", ""]);
                       }}
                       style={{ background: "transparent", border: "none", color: "#94a3b8", cursor: "pointer", fontSize: 14, padding: 4, display: "flex", alignItems: "center", justifyContent: "center" }}
                     >
-                      <X size={15} />
+                      <X size={16} />
                     </button>
                   </div>
 
