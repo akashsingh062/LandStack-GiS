@@ -1149,24 +1149,6 @@ a:hover { text-decoration: underline; }
   border-top-color: var(--bg-card) !important;
 }
 
-/* ── Universal Centered Language Selector Modal ── */
-.language-dropdown-menu {
-  position: fixed !important;
-  top: 50% !important;
-  left: 50% !important;
-  right: auto !important;
-  bottom: auto !important;
-  transform: translate(-50%, -50%) !important;
-  width: min(340px, calc(100vw - 32px)) !important;
-  max-width: calc(100vw - 32px) !important;
-  max-height: 80vh !important;
-  background: var(--bg-elevated) !important;
-  border: 1px solid var(--border-default) !important;
-  border-radius: var(--radius-lg) !important;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(0, 0, 0, 0.08) !important;
-  z-index: 2200 !important;
-  overflow: hidden !important;
-  display: flex !important;
-  flex-direction: column !important;
-}
+
+
 
