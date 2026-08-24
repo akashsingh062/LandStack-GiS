@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { calculateSlaStatus } from "@/lib/workflow";
@@ -105,12 +105,13 @@ export default function OfficerPortal() {
     "overview" | "prechecks" | "land360" | "history"
   >("overview");
 
-  const fetchApplications = useCallback(async () => {
+  const fetchApplications = async (deptToFetch?: string) => {
     try {
+      const dept = deptToFetch !== undefined ? deptToFetch : selectedDept;
       const url =
-        selectedDept === "All"
+        dept === "All"
           ? "/api/v1/applications"
-          : `/api/v1/applications?department=${selectedDept}`;
+          : `/api/v1/applications?department=${dept}`;
       const res = await apiClient.get(url);
       if (res.data?.applications) {
         setApplications(res.data.applications);
@@ -123,9 +124,9 @@ export default function OfficerPortal() {
     } finally {
       setLoading(false);
     }
-  }, [selectedDept]);
+  };
 
-  const fetchDetail = useCallback(async (appNo: string) => {
+  const fetchDetail = async (appNo: string) => {
     try {
       const res = await apiClient.get(`/api/v1/applications/${appNo}`);
       setSelectedDetail(res.data);
@@ -148,11 +149,12 @@ export default function OfficerPortal() {
     } catch (err) {
       console.error("Failed to fetch detail:", err);
     }
-  }, []);
+  };
 
   useEffect(() => {
     let isMounted = true;
-    const loadApps = async () => {
+    const load = async () => {
+      setLoading(true);
       try {
         const url =
           selectedDept === "All"
@@ -162,8 +164,7 @@ export default function OfficerPortal() {
         if (isMounted && res.data?.applications) {
           setApplications(res.data.applications);
           setSelectedAppNo(
-            (prev) =>
-              prev || (res.data.applications[0]?.application_no ?? null),
+            (prev) => prev || (res.data.applications[0]?.application_no ?? null),
           );
         }
       } catch (err) {
@@ -172,7 +173,7 @@ export default function OfficerPortal() {
         if (isMounted) setLoading(false);
       }
     };
-    loadApps();
+    load();
     return () => {
       isMounted = false;
     };
@@ -183,9 +184,7 @@ export default function OfficerPortal() {
     let isMounted = true;
     const loadDetail = async () => {
       try {
-        const res = await apiClient.get(
-          `/api/v1/applications/${selectedAppNo}`,
-        );
+        const res = await apiClient.get(`/api/v1/applications/${selectedAppNo}`);
         if (isMounted) {
           setSelectedDetail(res.data);
           if (
