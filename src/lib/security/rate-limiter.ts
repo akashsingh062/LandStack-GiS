@@ -17,7 +17,8 @@ const TIER_LIMITS: Record<UserRole | "ANONYMOUS", RateLimitConfig> = {
   PLANNING_OFFICER: { maxRequestsPerMinute: 300 },
   TAX_OFFICER: { maxRequestsPerMinute: 300 },
   AUDITOR: { maxRequestsPerMinute: 600 },
-  ADMIN: { maxRequestsPerMinute: 1200 }
+  ADMIN: { maxRequestsPerMinute: 1200 },
+  SUPER_ADMIN: { maxRequestsPerMinute: 2400 }
 };
 
 // In-memory sliding window request store

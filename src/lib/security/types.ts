@@ -1,17 +1,56 @@
 /**
- * LandStack — Security, RBAC, ABAC & Privacy Types (Step 16)
+ * LandStack — Security, RBAC, ABAC & Privacy Types (SIH 2026 PS #26014)
  */
+
+export type UserType = "CITIZEN" | "STAFF";
 
 export type UserRole =
   | "CITIZEN"
   | "REVENUE_OFFICER"
   | "REGISTRATION_OFFICER"
   | "PLANNING_OFFICER"
+  |"ADMIN"
+  | "SUPER_ADMIN"
   | "TAX_OFFICER"
-  | "ADMIN"
   | "AUDITOR";
 
 export type Permission =
+  // Standard dot-notation permissions
+  | "parcel.search"
+  | "parcel.read"
+  | "parcel.verify"
+  | "parcel.update"
+  | "land360.view"
+  | "service.create"
+  | "service.view_own"
+  | "document.download_allowed"
+  | "ror.read"
+  | "ror.verify"
+  | "mutation.read"
+  | "mutation.review"
+  | "workflow.process"
+  | "gis.view"
+  | "conflict.resolve"
+  | "registration.read"
+  | "registration.verify"
+  | "encumbrance.read"
+  | "encumbrance.update"
+  | "transaction.view"
+  | "zoning.read"
+  | "landuse.read"
+  | "building_permission.read"
+  | "building_permission.review"
+  | "ai_alert.verify"
+  | "user.manage"
+  | "role.manage"
+  | "adapter.manage"
+  | "system.config"
+  | "audit.view"
+  | "state.analytics.view"
+  | "cross_dept.audit"
+  | "governance.override"
+  | "threat.manage"
+  // Legacy / Uppercase tokens for component compatibility
   | "SEARCH_PUBLIC_PARCEL"
   | "VIEW_PUBLIC_GIS"
   | "VIEW_ROR"
@@ -36,13 +75,15 @@ export interface GeographicScope {
   state_code: string;       // e.g. 'BR', 'TN', 'CH', '*'
   district_code?: string;   // e.g. 'Madhubani', 'Coimbatore', '*'
   subdistrict_code?: string; // e.g. 'Basopatti', '*'
-  village_code?: string;
+  circle_code?: string;     // Alias for subdistrict / revenue circle
+  village_code?: string;    // e.g. '33', '*'
 }
 
 export interface SecurityPrincipal {
   user_id: string;
   name: string;
   role: UserRole;
+  user_type?: UserType;
   department?: string;
   scope: GeographicScope;
   ip_address?: string;
@@ -62,3 +103,4 @@ export interface PolicyEvaluationResult {
   reason: string;
   evaluated_at: string;
 }
+

@@ -23,8 +23,9 @@ export const ALL_ROLES: UserRole[] = [
   "REVENUE_OFFICER",
   "REGISTRATION_OFFICER",
   "PLANNING_OFFICER",
-  "TAX_OFFICER",
   "ADMIN",
+  "SUPER_ADMIN",
+  "TAX_OFFICER",
   "AUDITOR",
 ];
 
@@ -32,8 +33,9 @@ export const OFFICER_ROLES: UserRole[] = [
   "REVENUE_OFFICER",
   "REGISTRATION_OFFICER",
   "PLANNING_OFFICER",
-  "TAX_OFFICER",
   "ADMIN",
+  "SUPER_ADMIN",
+  "TAX_OFFICER",
 ];
 
 // Full Navigation Schema with granular RBAC permissions
@@ -49,8 +51,8 @@ export const ALL_NAV_SECTIONS: NavSection[] = [
   {
     label: "Citizen Services",
     items: [
-      { href: "/services", icon: "ClipboardList", label: "Services", allowedRoles: ["CITIZEN", "ADMIN"] },
-      { href: "/applications", icon: "FileText", label: "My Applications", badge: "2", allowedRoles: ["CITIZEN", "ADMIN"] },
+      { href: "/services", icon: "ClipboardList", label: "Services", allowedRoles: ["CITIZEN", "ADMIN", "SUPER_ADMIN"] },
+      { href: "/applications", icon: "FileText", label: "My Applications", badge: "2", allowedRoles: ["CITIZEN", "ADMIN", "SUPER_ADMIN"] },
     ],
   },
   {
@@ -63,11 +65,11 @@ export const ALL_NAV_SECTIONS: NavSection[] = [
   {
     label: "Intelligence & Standards",
     items: [
-      { href: "/admin/intelligence", icon: "Brain", label: "AI & Satellite AI", allowedRoles: ["ADMIN", "PLANNING_OFFICER", "REVENUE_OFFICER"] },
-      { href: "/admin/adapters", icon: "Plug", label: "State Adapters", allowedRoles: ["ADMIN"] },
-      { href: "/admin/security", icon: "Shield", label: "Security & Audit", allowedRoles: ["ADMIN", "AUDITOR"] },
-      { href: "/admin", icon: "Settings", label: "Admin Overview", allowedRoles: ["ADMIN"] },
-      { href: "/admin/import", icon: "Download", label: "Data Import", allowedRoles: ["ADMIN"] },
+      { href: "/admin/intelligence", icon: "Brain", label: "AI & Satellite AI", allowedRoles: ["ADMIN", "SUPER_ADMIN", "PLANNING_OFFICER", "REVENUE_OFFICER"] },
+      { href: "/admin/adapters", icon: "Plug", label: "State Adapters", allowedRoles: ["ADMIN", "SUPER_ADMIN"] },
+      { href: "/admin/security", icon: "Shield", label: "Security & Audit", allowedRoles: ["ADMIN", "SUPER_ADMIN", "AUDITOR"] },
+      { href: "/admin", icon: "Settings", label: "Admin Overview", allowedRoles: ["ADMIN", "SUPER_ADMIN"] },
+      { href: "/admin/import", icon: "Download", label: "Data Import", allowedRoles: ["ADMIN", "SUPER_ADMIN"] },
     ],
   },
 ];
@@ -79,15 +81,15 @@ export const ROUTE_ACCESS_RULES: { prefix: string; exact?: boolean; allowedRoles
   { prefix: "/search", allowedRoles: ALL_ROLES },
   { prefix: "/parcel", allowedRoles: ALL_ROLES },
   { prefix: "/", exact: true, allowedRoles: ALL_ROLES },
-  { prefix: "/services", allowedRoles: ["CITIZEN", "ADMIN"] },
-  { prefix: "/applications", allowedRoles: ["CITIZEN", "ADMIN"] },
+  { prefix: "/services", allowedRoles: ["CITIZEN", "ADMIN", "SUPER_ADMIN"] },
+  { prefix: "/applications", allowedRoles: ["CITIZEN", "ADMIN", "SUPER_ADMIN"] },
   { prefix: "/officer/conflicts", allowedRoles: [...OFFICER_ROLES, "AUDITOR"] },
   { prefix: "/officer", allowedRoles: OFFICER_ROLES },
-  { prefix: "/admin/intelligence", allowedRoles: ["ADMIN", "PLANNING_OFFICER", "REVENUE_OFFICER"] },
-  { prefix: "/admin/security", allowedRoles: ["ADMIN", "AUDITOR"] },
-  { prefix: "/admin/adapters", allowedRoles: ["ADMIN"] },
-  { prefix: "/admin/import", allowedRoles: ["ADMIN"] },
-  { prefix: "/admin", exact: true, allowedRoles: ["ADMIN"] },
+  { prefix: "/admin/intelligence", allowedRoles: ["ADMIN", "SUPER_ADMIN", "PLANNING_OFFICER", "REVENUE_OFFICER"] },
+  { prefix: "/admin/security", allowedRoles: ["ADMIN", "SUPER_ADMIN", "AUDITOR"] },
+  { prefix: "/admin/adapters", allowedRoles: ["ADMIN", "SUPER_ADMIN"] },
+  { prefix: "/admin/import", allowedRoles: ["ADMIN", "SUPER_ADMIN"] },
+  { prefix: "/admin", exact: true, allowedRoles: ["ADMIN", "SUPER_ADMIN"] },
 ];
 
 /**
