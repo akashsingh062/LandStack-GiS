@@ -37,7 +37,7 @@ export default function ProfilePage() {
   });
   const [saveSuccess, setSaveSuccess] = useState(false);
 
-  useEffect(() => {
+  const handleOpenEditModal = () => {
     if (currentUser) {
       setEditForm({
         name: currentUser.name || "",
@@ -46,7 +46,12 @@ export default function ProfilePage() {
         jurisdiction: currentUser.jurisdiction || "",
         circleCode: currentUser.circleCode || "",
       });
+    }
+    setIsEditModalOpen(true);
+  };
 
+  useEffect(() => {
+    if (currentUser) {
       // Load active applications for this user
       if (currentUser.role === "CITIZEN" && currentUser.phone) {
         setLoadingApps(true);
@@ -350,7 +355,7 @@ export default function ProfilePage() {
           >
             <button
               className="btn btn-secondary"
-              onClick={() => setIsEditModalOpen(true)}
+              onClick={handleOpenEditModal}
               style={{
                 fontSize: 12,
                 display: "flex",
