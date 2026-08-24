@@ -14,12 +14,12 @@ export function getPool(): Pool {
     globalThis.postgresPool = new Pool({
       connectionString: process.env.DATABASE_URL,
       ssl: { rejectUnauthorized: false },
-      max: 20,
-      idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 10000,
+      max: 10,
+      idleTimeoutMillis: 10000,
+      connectionTimeoutMillis: 5000,
       keepAlive: true,
       keepAliveInitialDelayMillis: 10000,
-      statement_timeout: 15000,
+      statement_timeout: 10000,
       allowExitOnIdle: false,
     });
 

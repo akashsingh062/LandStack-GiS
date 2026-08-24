@@ -60,40 +60,22 @@ export async function GET(
       const parcel = parcelRes.rows[0];
       const parcelUuid = parcel.parcel_id;
 
-      // Parallel concurrent execution across warm connection pool (sub-100ms response)
-      const [
-        identifiers,
-        ownership,
-        ror,
-        registrations,
-        encumbrances,
-        buildingPerms,
-        tax,
-        mutations,
-        disputes,
-        conflicts,
-        duplicateIdentifiers,
-        matchInfo,
-        landUse,
-        masterPlan,
-        restrictions,
-      ] = await Promise.all([
-        query(`SELECT identifier_type, identifier_value, is_primary FROM gis.parcel_identifiers WHERE parcel_id = $1::uuid ORDER BY is_primary DESC`, [parcelUuid]),
-        query(`SELECT o.name, o.owner_type, o.father_husband, po.ownership_type, po.ownership_share, po.valid_from FROM land.parcel_ownership po JOIN land.owners o ON o.owner_id = po.owner_id WHERE po.parcel_id = $1::uuid`, [parcelUuid]),
-        query(`SELECT ror_id, khata_number, khesra_number, land_classification, area, area_unit, revenue_amount, revenue_status, effective_from, source_system FROM land.ror_records WHERE parcel_id = $1::uuid ORDER BY created_at DESC LIMIT 1`, [parcelUuid]),
-        query(`SELECT registration_id, document_number, registration_date, transaction_type, seller_reference, buyer_reference, consideration_amount, stamp_duty, registration_fee, status FROM governance.registrations WHERE parcel_id = $1::uuid ORDER BY registration_date DESC`, [parcelUuid]),
-        query(`SELECT encumbrance_id, encumbrance_type, institution, reference_number, amount, outstanding, interest_rate, status, start_date, end_date FROM governance.encumbrances WHERE parcel_id = $1::uuid`, [parcelUuid]),
-        query(`SELECT permission_id, application_number, applicant, building_type, approved_area, floors, application_date, approval_date, status FROM governance.building_permissions WHERE parcel_id = $1::uuid`, [parcelUuid]),
-        query(`SELECT tax_id, assessment_year, tax_amount, paid_amount, due_amount, arrears, status FROM governance.property_tax WHERE parcel_id = $1::uuid ORDER BY assessment_year DESC LIMIT 3`, [parcelUuid]),
-        query(`SELECT status, mutation_date, created_at FROM land.mutations WHERE parcel_id = $1::uuid AND UPPER(COALESCE(status, 'PENDING')) NOT IN ('APPROVED', 'REJECTED', 'COMPLETED', 'CLOSED') ORDER BY COALESCE(mutation_date, created_at::date) ASC LIMIT 1`, [parcelUuid]),
-        query(`SELECT dispute_id, dispute_type, case_number, court, petitioner, respondent, status, stay_order, affects_transfer, filing_date, next_hearing FROM governance.disputes WHERE parcel_id = $1::uuid`, [parcelUuid]),
-        query(`SELECT conflict_id, conflict_type, severity, source_a, value_a, source_b, value_b, resolved FROM land.data_conflicts WHERE parcel_id = $1::uuid`, [parcelUuid]),
-        query(`SELECT EXISTS (SELECT 1 FROM gis.parcel_identifiers current_id JOIN gis.parcel_identifiers other_id ON current_id.identifier_type = other_id.identifier_type AND current_id.identifier_value = other_id.identifier_value AND current_id.parcel_id <> other_id.parcel_id WHERE current_id.parcel_id = $1::uuid) AS has_duplicate`, [parcelUuid]),
-        query(`SELECT source_system, match_method, match_score, area_diff_pct, status FROM integration.parcel_matches WHERE parcel_id = $1::uuid`, [parcelUuid]),
-        query(`SELECT lu.zone_id, lu.zone_code, lu.zone_name FROM gis.land_use_zones lu WHERE ST_Intersects(lu.geom, (SELECT geom FROM gis.parcels WHERE parcel_id = $1::uuid))`, [parcelUuid]),
-        query(`SELECT mp.zone_id, mp.zone_code, mp.zone_name, mp.permitted_use, mp.max_far, mp.max_height_m FROM gis.master_plan_zones mp WHERE ST_Intersects(mp.geom, (SELECT geom FROM gis.parcels WHERE parcel_id = $1::uuid))`, [parcelUuid]),
-        query(`SELECT rz.restriction_id, rz.restriction_type, rz.restriction_name, rz.severity, rz.description FROM gis.restriction_zones rz WHERE ST_Intersects(rz.geom, (SELECT geom FROM gis.parcels WHERE parcel_id = $1::uuid))`, [parcelUuid]),
-      ]);
+      // Execute sub-queries on the single client connection without pool exhaustion
+      const identifiers = await client.query(`SELECT identifier_type, identifier_value, is_primary FROM gis.parcel_identifiers WHERE parcel_id = $1::uuid ORDER BY is_primary DESC`, [parcelUuid]);
+      const ownership = await client.query(`SELECT o.name, o.owner_type, o.father_husband, po.ownership_type, po.ownership_share, po.valid_from FROM land.parcel_ownership po JOIN land.owners o ON o.owner_id = po.owner_id WHERE po.parcel_id = $1::uuid`, [parcelUuid]);
+      const ror = await client.query(`SELECT ror_id, khata_number, khesra_number, land_classification, area, area_unit, revenue_amount, revenue_status, effective_from, source_system FROM land.ror_records WHERE parcel_id = $1::uuid ORDER BY created_at DESC LIMIT 1`, [parcelUuid]);
+      const registrations = await client.query(`SELECT registration_id, document_number, registration_date, transaction_type, seller_reference, buyer_reference, consideration_amount, stamp_duty, registration_fee, status FROM governance.registrations WHERE parcel_id = $1::uuid ORDER BY registration_date DESC`, [parcelUuid]);
+      const encumbrances = await client.query(`SELECT encumbrance_id, encumbrance_type, institution, reference_number, amount, outstanding, interest_rate, status, start_date, end_date FROM governance.encumbrances WHERE parcel_id = $1::uuid`, [parcelUuid]);
+      const buildingPerms = await client.query(`SELECT permission_id, application_number, applicant, building_type, approved_area, floors, application_date, approval_date, status FROM governance.building_permissions WHERE parcel_id = $1::uuid`, [parcelUuid]);
+      const tax = await client.query(`SELECT tax_id, assessment_year, tax_amount, paid_amount, due_amount, arrears, status FROM governance.property_tax WHERE parcel_id = $1::uuid ORDER BY assessment_year DESC LIMIT 3`, [parcelUuid]);
+      const mutations = await client.query(`SELECT status, mutation_date, created_at FROM land.mutations WHERE parcel_id = $1::uuid AND UPPER(COALESCE(status, 'PENDING')) NOT IN ('APPROVED', 'REJECTED', 'COMPLETED', 'CLOSED') ORDER BY COALESCE(mutation_date, created_at::date) ASC LIMIT 1`, [parcelUuid]);
+      const disputes = await client.query(`SELECT dispute_id, dispute_type, case_number, court, petitioner, respondent, status, stay_order, affects_transfer, filing_date, next_hearing FROM governance.disputes WHERE parcel_id = $1::uuid`, [parcelUuid]);
+      const conflicts = await client.query(`SELECT conflict_id, conflict_type, severity, source_a, value_a, source_b, value_b, resolved FROM land.data_conflicts WHERE parcel_id = $1::uuid`, [parcelUuid]);
+      const duplicateIdentifiers = await client.query(`SELECT EXISTS (SELECT 1 FROM gis.parcel_identifiers current_id JOIN gis.parcel_identifiers other_id ON current_id.identifier_type = other_id.identifier_type AND current_id.identifier_value = other_id.identifier_value AND current_id.parcel_id <> other_id.parcel_id WHERE current_id.parcel_id = $1::uuid) AS has_duplicate`, [parcelUuid]);
+      const matchInfo = await client.query(`SELECT source_system, match_method, match_score, area_diff_pct, status FROM integration.parcel_matches WHERE parcel_id = $1::uuid`, [parcelUuid]);
+      const landUse = await client.query(`SELECT lu.zone_id, lu.zone_code, lu.zone_name FROM gis.land_use_zones lu WHERE ST_Intersects(lu.geom, (SELECT geom FROM gis.parcels WHERE parcel_id = $1::uuid))`, [parcelUuid]);
+      const masterPlan = await client.query(`SELECT mp.zone_id, mp.zone_code, mp.zone_name, mp.permitted_use, mp.max_far, mp.max_height_m FROM gis.master_plan_zones mp WHERE ST_Intersects(mp.geom, (SELECT geom FROM gis.parcels WHERE parcel_id = $1::uuid))`, [parcelUuid]);
+      const restrictions = await client.query(`SELECT rz.restriction_id, rz.restriction_type, rz.restriction_name, rz.severity, rz.description FROM gis.restriction_zones rz WHERE ST_Intersects(rz.geom, (SELECT geom FROM gis.parcels WHERE parcel_id = $1::uuid))`, [parcelUuid]);
 
     // Rules Engine
     const rulesResult = evaluateRules({

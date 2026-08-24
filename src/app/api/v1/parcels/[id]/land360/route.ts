@@ -16,7 +16,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { query } from "@/lib/db";
+import { withClient } from "@/lib/db";
 import { evaluateRules } from "@/lib/rules-engine";
 
 export async function GET(
@@ -26,39 +26,37 @@ export async function GET(
   const { id } = await params;
 
   try {
-    // 1. Parcel
-    const parcelRes = await query(
-      `SELECT parcel_id, ulpin, survey_number, area, area_unit, land_type,
-              state_code, district_code, subdistrict_code, village_code,
-              source_system, created_at,
-              ST_AsGeoJSON(geom)::json AS geometry,
-              ST_X(ST_Centroid(geom)) AS centroid_lng,
-              ST_Y(ST_Centroid(geom)) AS centroid_lat
-       FROM gis.parcels WHERE parcel_id = $1::uuid`, [id]
-    );
+    return await withClient(async (client) => {
+      // 1. Parcel Lookup
+      const parcelRes = await client.query(
+        `SELECT parcel_id, ulpin, survey_number, area, area_unit, land_type,
+                state_code, district_code, subdistrict_code, village_code,
+                source_system, created_at,
+                ST_AsGeoJSON(geom)::json AS geometry,
+                ST_X(ST_Centroid(geom)) AS centroid_lng,
+                ST_Y(ST_Centroid(geom)) AS centroid_lat
+         FROM gis.parcels WHERE parcel_id = $1::uuid`, [id]
+      );
 
-    if (parcelRes.rows.length === 0) {
-      return NextResponse.json({ error: "Parcel not found" }, { status: 404 });
-    }
-    const parcel = parcelRes.rows[0];
+      if (parcelRes.rows.length === 0) {
+        return NextResponse.json({ error: "Parcel not found" }, { status: 404 });
+      }
+      const parcel = parcelRes.rows[0];
 
-    // 2. All sub-queries in parallel
-    const [identifiers, ownership, ror, registrations, encumbrances, buildingPerms, tax, disputes, conflicts, matchInfo, landUse, masterPlan, restrictions] = await Promise.all([
-      query(`SELECT identifier_type, identifier_value, is_primary FROM gis.parcel_identifiers WHERE parcel_id = $1::uuid ORDER BY is_primary DESC`, [id]),
-      query(`SELECT o.name, o.owner_type, o.father_husband, po.ownership_type, po.ownership_share, po.valid_from FROM land.parcel_ownership po JOIN land.owners o ON o.owner_id = po.owner_id WHERE po.parcel_id = $1::uuid`, [id]),
-      query(`SELECT ror_id, khata_number, khesra_number, land_classification, area, area_unit, revenue_amount, revenue_status, effective_from, source_system FROM land.ror_records WHERE parcel_id = $1::uuid ORDER BY created_at DESC LIMIT 1`, [id]),
-      query(`SELECT registration_id, document_number, registration_date, transaction_type, seller_reference, buyer_reference, consideration_amount, stamp_duty, registration_fee, status, source_system FROM governance.registrations WHERE parcel_id = $1::uuid ORDER BY registration_date DESC`, [id]),
-      query(`SELECT encumbrance_id, encumbrance_type, institution, reference_number, amount, outstanding, interest_rate, status, start_date, end_date, source_system FROM governance.encumbrances WHERE parcel_id = $1::uuid`, [id]),
-      query(`SELECT permission_id, application_number, applicant, building_type, approved_area, floors, application_date, approval_date, status, source_system FROM governance.building_permissions WHERE parcel_id = $1::uuid`, [id]),
-      query(`SELECT tax_id, assessment_year, tax_amount, paid_amount, due_amount, arrears, status FROM governance.property_tax WHERE parcel_id = $1::uuid ORDER BY assessment_year DESC LIMIT 3`, [id]),
-      query(`SELECT dispute_id, dispute_type, case_number, court, petitioner, respondent, status, stay_order, affects_transfer, filing_date, next_hearing FROM governance.disputes WHERE parcel_id = $1::uuid`, [id]),
-      query(`SELECT conflict_id, conflict_type, severity, source_a, value_a, source_b, value_b, resolved FROM land.data_conflicts WHERE parcel_id = $1::uuid`, [id]),
-      query(`SELECT source_system, match_method, match_score, area_diff_pct, status FROM integration.parcel_matches WHERE parcel_id = $1::uuid`, [id]),
-      // Spatial joins
-      query(`SELECT lu.zone_id, lu.zone_code, lu.zone_name FROM gis.land_use_zones lu WHERE ST_Intersects(lu.geom, (SELECT geom FROM gis.parcels WHERE parcel_id = $1::uuid))`, [id]),
-      query(`SELECT mp.zone_id, mp.zone_code, mp.zone_name, mp.permitted_use, mp.max_far, mp.max_height_m FROM gis.master_plan_zones mp WHERE ST_Intersects(mp.geom, (SELECT geom FROM gis.parcels WHERE parcel_id = $1::uuid))`, [id]),
-      query(`SELECT rz.restriction_id, rz.restriction_type, rz.restriction_name, rz.severity, rz.description FROM gis.restriction_zones rz WHERE ST_Intersects(rz.geom, (SELECT geom FROM gis.parcels WHERE parcel_id = $1::uuid))`, [id]),
-    ]);
+      // 2. All sub-queries on single client connection
+      const identifiers = await client.query(`SELECT identifier_type, identifier_value, is_primary FROM gis.parcel_identifiers WHERE parcel_id = $1::uuid ORDER BY is_primary DESC`, [id]);
+      const ownership = await client.query(`SELECT o.name, o.owner_type, o.father_husband, po.ownership_type, po.ownership_share, po.valid_from FROM land.parcel_ownership po JOIN land.owners o ON o.owner_id = po.owner_id WHERE po.parcel_id = $1::uuid`, [id]);
+      const ror = await client.query(`SELECT ror_id, khata_number, khesra_number, land_classification, area, area_unit, revenue_amount, revenue_status, effective_from, source_system FROM land.ror_records WHERE parcel_id = $1::uuid ORDER BY created_at DESC LIMIT 1`, [id]);
+      const registrations = await client.query(`SELECT registration_id, document_number, registration_date, transaction_type, seller_reference, buyer_reference, consideration_amount, stamp_duty, registration_fee, status, source_system FROM governance.registrations WHERE parcel_id = $1::uuid ORDER BY registration_date DESC`, [id]);
+      const encumbrances = await client.query(`SELECT encumbrance_id, encumbrance_type, institution, reference_number, amount, outstanding, interest_rate, status, start_date, end_date, source_system FROM governance.encumbrances WHERE parcel_id = $1::uuid`, [id]);
+      const buildingPerms = await client.query(`SELECT permission_id, application_number, applicant, building_type, approved_area, floors, application_date, approval_date, status, source_system FROM governance.building_permissions WHERE parcel_id = $1::uuid`, [id]);
+      const tax = await client.query(`SELECT tax_id, assessment_year, tax_amount, paid_amount, due_amount, arrears, status FROM governance.property_tax WHERE parcel_id = $1::uuid ORDER BY assessment_year DESC LIMIT 3`, [id]);
+      const disputes = await client.query(`SELECT dispute_id, dispute_type, case_number, court, petitioner, respondent, status, stay_order, affects_transfer, filing_date, next_hearing FROM governance.disputes WHERE parcel_id = $1::uuid`, [id]);
+      const conflicts = await client.query(`SELECT conflict_id, conflict_type, severity, source_a, value_a, source_b, value_b, resolved FROM land.data_conflicts WHERE parcel_id = $1::uuid`, [id]);
+      const matchInfo = await client.query(`SELECT source_system, match_method, match_score, area_diff_pct, status FROM integration.parcel_matches WHERE parcel_id = $1::uuid`, [id]);
+      const landUse = await client.query(`SELECT lu.zone_id, lu.zone_code, lu.zone_name FROM gis.land_use_zones lu WHERE ST_Intersects(lu.geom, (SELECT geom FROM gis.parcels WHERE parcel_id = $1::uuid))`, [id]);
+      const masterPlan = await client.query(`SELECT mp.zone_id, mp.zone_code, mp.zone_name, mp.permitted_use, mp.max_far, mp.max_height_m FROM gis.master_plan_zones mp WHERE ST_Intersects(mp.geom, (SELECT geom FROM gis.parcels WHERE parcel_id = $1::uuid))`, [id]);
+      const restrictions = await client.query(`SELECT rz.restriction_id, rz.restriction_type, rz.restriction_name, rz.severity, rz.description FROM gis.restriction_zones rz WHERE ST_Intersects(rz.geom, (SELECT geom FROM gis.parcels WHERE parcel_id = $1::uuid))`, [id]);
 
     // 3. Rules Engine
     const rulesResult = evaluateRules({
@@ -120,7 +118,8 @@ export async function GET(
       },
     };
 
-    return NextResponse.json(land360);
+      return NextResponse.json(land360);
+    });
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : String(error);
     console.error("[API land360] Error:", msg);
