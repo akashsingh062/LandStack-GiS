@@ -4,6 +4,7 @@ import { useState, Suspense } from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import * as Lucide from "lucide-react";
 import apiClient from "@/lib/api-client";
+import { useAuth } from "@/lib/security/auth-context";
 
 const SERVICE_INFO: Record<string, { name: string; icon: React.ReactNode; fields: string[] }> = {
   "ownership-verification": { name: "Ownership Verification", icon: <Lucide.CheckCircle2 size={24} />, fields: ["parcel", "purpose"] },
@@ -20,6 +21,7 @@ function ServiceFormContent() {
   const params = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { currentUser } = useAuth();
   const type = params.type as string;
   const info = SERVICE_INFO[type] || { name: type, icon: <Lucide.FileText size={24} />, fields: ["parcel"] };
 
@@ -34,9 +36,9 @@ function ServiceFormContent() {
     new_owner: "",
     remarks: "",
   });
+  const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [appId, setAppId] = useState("");
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -48,9 +50,9 @@ function ServiceFormContent() {
       const res = await apiClient.post("/api/v1/services", {
         service_type: type,
         parcel_ulpin: form.parcel_ulpin,
-        applicant_name: "Ramesh Kumar",
-        applicant_email: "ramesh.kumar@example.com",
-        applicant_phone: "+91-9876543210",
+        applicant_name: currentUser?.name || "Citizen Applicant",
+        applicant_email: currentUser?.email || "citizen@biharbhumi.bihar.gov.in",
+        applicant_phone: currentUser?.phone || "+91-9876543210",
         purpose: form.purpose || form.mutation_reason || "Citizen service request",
         details: form,
         priority: "NORMAL",

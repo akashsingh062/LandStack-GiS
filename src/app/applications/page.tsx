@@ -49,10 +49,11 @@ export default function ApplicationsPage() {
     let isMounted = true;
     const loadApps = async () => {
       try {
-        const url = currentUser.role !== "CITIZEN" && currentUser.role !== "ADMIN" && currentUser.role !== "AUDITOR"
-          ? (currentUser.role === "REGISTRATION_OFFICER" ? "/api/v1/applications?department=Registration"
-            : currentUser.role === "PLANNING_OFFICER" ? "/api/v1/applications?department=Planning"
-            : currentUser.role === "TAX_OFFICER" ? "/api/v1/applications?department=Municipality"
+        const role = currentUser?.role || "CITIZEN";
+        const url = role !== "CITIZEN" && role !== "ADMIN" && role !== "AUDITOR"
+          ? (role === "REGISTRATION_OFFICER" ? "/api/v1/applications?department=Registration"
+            : role === "PLANNING_OFFICER" ? "/api/v1/applications?department=Planning"
+            : role === "TAX_OFFICER" ? "/api/v1/applications?department=Municipality"
             : "/api/v1/applications?department=Revenue")
           : "/api/v1/applications";
 
@@ -92,6 +93,7 @@ export default function ApplicationsPage() {
 
   const app = selectedDetail?.application || applications.find((a) => a.application_no === selectedId);
   const history = selectedDetail?.history || [];
+  const currentRole = currentUser?.role || "CITIZEN";
 
   return (
     <motion.div
@@ -108,19 +110,19 @@ export default function ApplicationsPage() {
       >
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
-            <span style={{ fontSize: 24 }}>{currentUser.role === "CITIZEN" ? "📋" : "👨‍💼"}</span>
+            <span style={{ fontSize: 24 }}>{currentRole === "CITIZEN" ? "📋" : "👨‍💼"}</span>
             <h1 className="page-title">
-              {currentUser.role === "CITIZEN" ? t("apps.title") : `${currentUser.department} ${t("apps.title")}`}
+              {currentRole === "CITIZEN" ? t("apps.title") : `${currentUser?.department || "Department"} ${t("apps.title")}`}
             </h1>
           </div>
           <p className="page-subtitle">
-            {currentUser.role === "CITIZEN"
-              ? `${t("apps.subtitle")} (${currentUser.name})`
-              : `Departmental case queue for ${currentUser.title} (${currentUser.jurisdiction})`}
+            {currentRole === "CITIZEN"
+              ? `${t("apps.subtitle")}${currentUser ? ` (${currentUser.name})` : ""}`
+              : `Departmental case queue for ${currentUser?.title || "Officer"} (${currentUser?.jurisdiction || "Bihar"})`}
           </p>
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          {currentUser.role === "CITIZEN" ? (
+          {currentRole === "CITIZEN" ? (
             <Link href="/services" className="btn btn-primary">+ New Application</Link>
           ) : (
             <Link href="/officer" className="btn btn-primary">Open Officer Desk →</Link>
