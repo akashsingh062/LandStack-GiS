@@ -19,6 +19,12 @@ export default function ProfilePage() {
   >("overview");
   const [citizenApps, setCitizenApps] = useState<any[]>([]);
   const [loadingApps, setLoadingApps] = useState(false);
+  const [userParcels, setUserParcels] = useState<any[]>([]);
+  const [loadingParcels, setLoadingParcels] = useState(false);
+  const [parcelSearchTerm, setParcelSearchTerm] = useState("");
+  const [linkSuccessMessage, setLinkSuccessMessage] = useState<string | null>(null);
+  const [linkingParcel, setLinkingParcel] = useState(false);
+  const [copiedUlpin, setCopiedUlpin] = useState<string | null>(null);
 
   // Edit Modal State
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -56,8 +62,59 @@ export default function ProfilePage() {
           .catch(() => setCitizenApps([]))
           .finally(() => setLoadingApps(false));
       }
+
+      // Load all land parcels owned by this citizen / owner
+      setLoadingParcels(true);
+      apiClient
+        .get(
+          `/api/v1/user/parcels?name=${encodeURIComponent(currentUser.name || "")}&phone=${encodeURIComponent(currentUser.phone || "")}`
+        )
+        .then((res) => {
+          if (res.data?.parcels) {
+            setUserParcels(res.data.parcels);
+          }
+        })
+        .catch(() => setUserParcels([]))
+        .finally(() => setLoadingParcels(false));
     }
   }, [currentUser]);
+
+  const handleCopyUlpin = (ulpin: string) => {
+    navigator.clipboard.writeText(ulpin);
+    setCopiedUlpin(ulpin);
+    setTimeout(() => setCopiedUlpin(null), 2000);
+  };
+
+  const handleSearchAndLinkLand = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!parcelSearchTerm.trim()) return;
+    setLinkingParcel(true);
+    setLinkSuccessMessage(null);
+    apiClient
+      .get(`/api/v1/user/parcels?ulpin=${encodeURIComponent(parcelSearchTerm.trim())}`)
+      .then((res) => {
+        if (res.data?.parcels && res.data.parcels.length > 0) {
+          const found = res.data.parcels[0];
+          setUserParcels((prev) => {
+            const exists = prev.some((p) => p.parcel_id === found.parcel_id);
+            if (!exists) {
+              setLinkSuccessMessage(`✓ Parcel ${found.ulpin || found.survey_number} successfully linked to your portfolio!`);
+              return [found, ...prev];
+            } else {
+              setLinkSuccessMessage(`ℹ️ Parcel ${found.ulpin || found.survey_number} is already in your portfolio.`);
+              return prev;
+            }
+          });
+          setParcelSearchTerm("");
+        } else {
+          setLinkSuccessMessage(`⚠️ No parcel found matching "${parcelSearchTerm.trim()}".`);
+        }
+      })
+      .catch(() => {
+        setLinkSuccessMessage(`⚠️ Error searching parcel.`);
+      })
+      .finally(() => setLinkingParcel(false));
+  };
 
   // Guest State if user is not logged in
   if (!currentUser) {
@@ -517,6 +574,309 @@ export default function ProfilePage() {
               <span className="badge badge-info">Standard Active</span>
             </div>
           </div>
+
+          {/* Land Portfolio Summary Snapshot Card */}
+          <div
+            className="card"
+            style={{
+              gridColumn: "1 / -1",
+              background: "var(--bg-elevated)",
+              border: "1px solid var(--border-default)",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "var(--space-md)",
+                flexWrap: "wrap",
+                gap: 8,
+              }}
+            >
+              <h3
+                className="card-title"
+                style={{
+                  margin: 0,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                }}
+              >
+                <Lucide.Layers size={18} color="var(--brand-primary)" />
+                Registered Land Holdings & Cadastre Portfolio
+              </h3>
+              <button
+                onClick={() => setActiveTab("portfolio")}
+                className="btn btn-primary"
+                style={{ fontSize: 12 }}
+              >
+                View All Land Details ({userParcels.length}) →
+              </button>
+            </div>
+
+            {loadingParcels ? (
+              <p style={{ color: "var(--text-secondary)", fontSize: 13 }}>
+                Loading land holdings...
+              </p>
+            ) : userParcels.length > 0 ? (
+              <div>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+                    gap: 12,
+                    marginBottom: 16,
+                  }}
+                >
+                  <div
+                    style={{
+                      padding: "12px 16px",
+                      background: "var(--bg-card)",
+                      borderRadius: 8,
+                      border: "1px solid var(--border-default)",
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: 11,
+                        color: "var(--text-secondary)",
+                        fontWeight: 600,
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      Owned Parcels
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 20,
+                        fontWeight: 800,
+                        color: "var(--text-primary)",
+                        marginTop: 4,
+                      }}
+                    >
+                      {userParcels.length} Plots
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      padding: "12px 16px",
+                      background: "var(--bg-card)",
+                      borderRadius: 8,
+                      border: "1px solid var(--border-default)",
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: 11,
+                        color: "var(--text-secondary)",
+                        fontWeight: 600,
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      Aggregate Land Area
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 20,
+                        fontWeight: 800,
+                        color: "var(--brand-primary)",
+                        marginTop: 4,
+                      }}
+                    >
+                      {(
+                        userParcels.reduce(
+                          (sum, p) => sum + (Number(p.area) || 0),
+                          0,
+                        ) / 10000
+                      ).toFixed(2)}{" "}
+                      Ha
+                    </div>
+                    <div style={{ fontSize: 11, color: "var(--text-tertiary)" }}>
+                      {userParcels
+                        .reduce((sum, p) => sum + (Number(p.area) || 0), 0)
+                        .toLocaleString()}{" "}
+                      sq.m
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      padding: "12px 16px",
+                      background: "var(--bg-card)",
+                      borderRadius: 8,
+                      border: "1px solid var(--border-default)",
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: 11,
+                        color: "var(--text-secondary)",
+                        fontWeight: 600,
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      Clear Title Parcels
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 20,
+                        fontWeight: 800,
+                        color: "var(--status-success)",
+                        marginTop: 4,
+                      }}
+                    >
+                      {
+                        userParcels.filter(
+                          (p) =>
+                            !Number(p.active_disputes) &&
+                            p.encumbrance_status !== "ACTIVE",
+                        ).length
+                      }{" "}
+                      / {userParcels.length}
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      padding: "12px 16px",
+                      background: "var(--bg-card)",
+                      borderRadius: 8,
+                      border: "1px solid var(--border-default)",
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: 11,
+                        color: "var(--text-secondary)",
+                        fontWeight: 600,
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      Primary Revenue Mauza
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 14,
+                        fontWeight: 700,
+                        color: "var(--text-primary)",
+                        marginTop: 6,
+                      }}
+                    >
+                      {userParcels[0]?.village_code || "Mauza Arghawa (33)"}
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+                    gap: 12,
+                  }}
+                >
+                  {userParcels.slice(0, 3).map((p) => {
+                    const isDisputed = Number(p.active_disputes) > 0;
+                    const isEncumbered = p.encumbrance_status === "ACTIVE";
+
+                    return (
+                      <div
+                        key={p.parcel_id}
+                        style={{
+                          padding: 14,
+                          background: "var(--bg-card)",
+                          borderRadius: 8,
+                          border: isDisputed
+                            ? "1px solid rgba(239, 68, 68, 0.4)"
+                            : "1px solid var(--border-default)",
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            marginBottom: 6,
+                          }}
+                        >
+                          <span
+                            style={{
+                              fontSize: 13,
+                              fontWeight: 700,
+                              fontFamily: "monospace",
+                              color: "var(--brand-primary)",
+                            }}
+                          >
+                            {p.ulpin || `P-${p.survey_number}`}
+                          </span>
+                          <span
+                            className={`badge ${
+                              isDisputed
+                                ? "badge-error"
+                                : isEncumbered
+                                  ? "badge-warning"
+                                  : "badge-success"
+                            }`}
+                            style={{ fontSize: 10 }}
+                          >
+                            {isDisputed
+                              ? "Disputed"
+                              : isEncumbered
+                                ? "Mortgaged"
+                                : "Clear Title"}
+                          </span>
+                        </div>
+                        <div
+                          style={{
+                            fontSize: 13,
+                            fontWeight: 600,
+                            color: "var(--text-primary)",
+                            marginBottom: 2,
+                          }}
+                        >
+                          Plot #{p.survey_number} • Khata #{p.khata_number || "105"}{" "}
+                          (Khesra #{p.khesra_number || p.survey_number})
+                        </div>
+                        <div
+                          style={{
+                            fontSize: 11,
+                            color: "var(--text-secondary)",
+                            marginBottom: 10,
+                          }}
+                        >
+                          {p.village_code || "Mauza Arghawa (33)"} •{" "}
+                          {Number(p.area).toLocaleString()} sq.m (
+                          {(Number(p.area) / 10000).toFixed(2)} Ha)
+                        </div>
+                        <div style={{ display: "flex", gap: 6 }}>
+                          <Link
+                            href={`/parcel/${p.ulpin || p.parcel_id}`}
+                            className="btn btn-secondary"
+                            style={{ fontSize: 11, padding: "4px 10px" }}
+                          >
+                            Land 360°
+                          </Link>
+                          <Link
+                            href={`/services/mutation?parcel=${p.ulpin || p.survey_number}`}
+                            className="btn btn-primary"
+                            style={{ fontSize: 11, padding: "4px 10px" }}
+                          >
+                            Apply Mutation
+                          </Link>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : (
+              <p style={{ color: "var(--text-secondary)", fontSize: 13 }}>
+                No land parcels linked yet. You can claim or link land in the
+                Land Holdings tab.
+              </p>
+            )}
+          </div>
         </motion.div>
       )}
 
@@ -639,154 +999,386 @@ export default function ProfilePage() {
                     gap: 8,
                   }}
                 >
-                  <h3
-                    className="card-title"
-                    style={{
-                      margin: 0,
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 8,
-                    }}
-                  >
-                    <Lucide.Layers size={18} color="var(--brand-primary)" />{" "}
-                    Linked Land Holdings & Jamabandi RoR
-                  </h3>
-                  <Link
-                    href="/map"
-                    className="btn btn-outline"
-                    style={{ fontSize: 12 }}
-                  >
-                    Open Cadastral Map →
-                  </Link>
+                  <div>
+                    <h3
+                      className="card-title"
+                      style={{
+                        margin: 0,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                      }}
+                    >
+                      <Lucide.Layers size={18} color="var(--brand-primary)" />{" "}
+                      Linked Land Holdings & Jamabandi RoR Portfolio
+                    </h3>
+                    <div style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 2 }}>
+                      Official cadastre records and title extracts for {currentUser.name}
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <Link
+                      href="/map"
+                      className="btn btn-outline"
+                      style={{ fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}
+                    >
+                      <Lucide.Map size={14} /> Cadastral Map →
+                    </Link>
+                  </div>
                 </div>
 
+                {/* Land Holding Summary Metrics Strip */}
                 <div
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-                    gap: "var(--space-md)",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+                    gap: 12,
+                    marginBottom: "var(--space-md)",
                   }}
                 >
                   <div
-                    className="card"
                     style={{
+                      padding: "12px 16px",
                       background: "var(--bg-elevated)",
+                      borderRadius: 8,
                       border: "1px solid var(--border-default)",
                     }}
                   >
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        marginBottom: 6,
-                      }}
-                    >
-                      <span
-                        style={{
-                          fontSize: 13,
-                          fontWeight: 700,
-                          fontFamily: "monospace",
-                          color: "var(--brand-primary)",
-                        }}
-                      >
-                        IN-BR-PTN-0001051
-                      </span>
-                      <span className="badge badge-success">Clear Title</span>
+                    <div style={{ fontSize: 11, color: "var(--text-secondary)", fontWeight: 600, textTransform: "uppercase" }}>
+                      Owned Land Parcels
                     </div>
-                    <div
-                      style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}
-                    >
-                      Plot #1051 • Panji-II Khata #121
-                    </div>
-                    <div
-                      style={{
-                        fontSize: 12,
-                        color: "var(--text-secondary)",
-                        marginBottom: 8,
-                      }}
-                    >
-                      Mauza Arghawa (33) • Area: 1.25 Hectares (Agricultural)
-                    </div>
-                    <div style={{ display: "flex", gap: 6 }}>
-                      <Link
-                        href="/parcel/IN-BR-PTN-0001051"
-                        className="btn btn-secondary"
-                        style={{ fontSize: 11, padding: "4px 8px" }}
-                      >
-                        Land 360°
-                      </Link>
-                      <Link
-                        href="/services/mutation?parcel=IN-BR-PTN-0001051"
-                        className="btn btn-primary"
-                        style={{ fontSize: 11, padding: "4px 8px" }}
-                      >
-                        Apply Mutation
-                      </Link>
+                    <div style={{ fontSize: 22, fontWeight: 800, color: "var(--text-primary)", marginTop: 2 }}>
+                      {userParcels.length} Plots
                     </div>
                   </div>
 
                   <div
-                    className="card"
                     style={{
+                      padding: "12px 16px",
                       background: "var(--bg-elevated)",
+                      borderRadius: 8,
                       border: "1px solid var(--border-default)",
                     }}
                   >
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        marginBottom: 6,
-                      }}
-                    >
-                      <span
-                        style={{
-                          fontSize: 13,
-                          fontWeight: 700,
-                          fontFamily: "monospace",
-                          color: "var(--brand-primary)",
-                        }}
-                      >
-                        IN-BR-PTN-0001021
-                      </span>
-                      <span className="badge badge-info">
-                        Zoned Residential
-                      </span>
+                    <div style={{ fontSize: 11, color: "var(--text-secondary)", fontWeight: 600, textTransform: "uppercase" }}>
+                      Cumulative Holding Area
                     </div>
-                    <div
-                      style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}
-                    >
-                      Plot #1021 • Panji-II Khata #89
+                    <div style={{ fontSize: 22, fontWeight: 800, color: "var(--brand-primary)", marginTop: 2 }}>
+                      {(userParcels.reduce((sum, p) => sum + (Number(p.area) || 0), 0) / 10000).toFixed(2)} Ha
                     </div>
-                    <div
-                      style={{
-                        fontSize: 12,
-                        color: "var(--text-secondary)",
-                        marginBottom: 8,
-                      }}
-                    >
-                      Mauza Arghawa (33) • Area: 0.45 Hectares (Residential G+2)
+                    <div style={{ fontSize: 11, color: "var(--text-tertiary)" }}>
+                      {userParcels.reduce((sum, p) => sum + (Number(p.area) || 0), 0).toLocaleString()} sq.m
                     </div>
-                    <div style={{ display: "flex", gap: 6 }}>
-                      <Link
-                        href="/parcel/IN-BR-PTN-0001021"
-                        className="btn btn-secondary"
-                        style={{ fontSize: 11, padding: "4px 8px" }}
-                      >
-                        Land 360°
-                      </Link>
-                      <Link
-                        href="/services/building-permission?parcel=IN-BR-PTN-0001021"
-                        className="btn btn-primary"
-                        style={{ fontSize: 11, padding: "4px 8px" }}
-                      >
-                        Building NOC
-                      </Link>
+                  </div>
+
+                  <div
+                    style={{
+                      padding: "12px 16px",
+                      background: "var(--bg-elevated)",
+                      borderRadius: 8,
+                      border: "1px solid var(--border-default)",
+                    }}
+                  >
+                    <div style={{ fontSize: 11, color: "var(--text-secondary)", fontWeight: 600, textTransform: "uppercase" }}>
+                      Verified Clear Titles
+                    </div>
+                    <div style={{ fontSize: 22, fontWeight: 800, color: "var(--status-success)", marginTop: 2 }}>
+                      {userParcels.filter((p) => !Number(p.active_disputes) && p.encumbrance_status !== "ACTIVE").length} / {userParcels.length}
+                    </div>
+                    <div style={{ fontSize: 11, color: "var(--text-tertiary)" }}>
+                      Panji-II & Jamabandi Clear
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      padding: "12px 16px",
+                      background: "var(--bg-elevated)",
+                      borderRadius: 8,
+                      border: "1px solid var(--border-default)",
+                    }}
+                  >
+                    <div style={{ fontSize: 11, color: "var(--text-secondary)", fontWeight: 600, textTransform: "uppercase" }}>
+                      Revenue Circle
+                    </div>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)", marginTop: 6 }}>
+                      {currentUser.circleCode || "Basopatti (BR-10)"}
                     </div>
                   </div>
                 </div>
+
+                {/* Search & Link Additional Land Box */}
+                <div
+                  style={{
+                    padding: 12,
+                    background: "rgba(2, 132, 199, 0.04)",
+                    border: "1px dashed var(--brand-primary)",
+                    borderRadius: 8,
+                    marginBottom: "var(--space-md)",
+                  }}
+                >
+                  <form
+                    onSubmit={handleSearchAndLinkLand}
+                    style={{
+                      display: "flex",
+                      gap: 8,
+                      alignItems: "center",
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <div style={{ flex: 1, minWidth: 220 }}>
+                      <input
+                        className="input"
+                        placeholder="Search & link land by ULPIN (e.g. IN-BR-PTN-0001051) or Plot #"
+                        value={parcelSearchTerm}
+                        onChange={(e) => setParcelSearchTerm(e.target.value)}
+                        style={{ fontSize: 13, padding: "7px 12px", width: "100%" }}
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={linkingParcel || !parcelSearchTerm.trim()}
+                      className="btn btn-primary"
+                      style={{ fontSize: 12, padding: "8px 16px", display: "flex", alignItems: "center", gap: 6 }}
+                    >
+                      <Lucide.PlusCircle size={14} /> {linkingParcel ? "Linking..." : "Link Parcel to Profile"}
+                    </button>
+                  </form>
+                  {linkSuccessMessage && (
+                    <div style={{ fontSize: 12, marginTop: 6, fontWeight: 600, color: linkSuccessMessage.startsWith("✓") ? "var(--status-success)" : "var(--status-warning)" }}>
+                      {linkSuccessMessage}
+                    </div>
+                  )}
+                </div>
+
+                {/* Parcels Grid */}
+                {loadingParcels ? (
+                  <div style={{ padding: "var(--space-xl)", textAlign: "center", color: "var(--text-secondary)" }}>
+                    <Lucide.Loader2 size={24} className="spin" style={{ margin: "0 auto 8px" }} />
+                    <div>Loading verified cadastral land holdings from Jamabandi & RoR...</div>
+                  </div>
+                ) : userParcels.length > 0 ? (
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+                      gap: "var(--space-md)",
+                    }}
+                  >
+                    {userParcels.map((p) => {
+                      const isDisputed = Number(p.active_disputes) > 0;
+                      const isEncumbered = p.encumbrance_status === "ACTIVE";
+                      const areaSqm = Number(p.area) || 0;
+                      const areaHa = (areaSqm / 10000).toFixed(2);
+                      const isCopied = copiedUlpin === (p.ulpin || p.parcel_id);
+
+                      return (
+                        <div
+                          key={p.parcel_id}
+                          className="card"
+                          style={{
+                            background: "var(--bg-elevated)",
+                            border: isDisputed
+                              ? "1px solid rgba(239, 68, 68, 0.45)"
+                              : isEncumbered
+                                ? "1px solid rgba(245, 158, 11, 0.45)"
+                                : "1px solid var(--border-default)",
+                            display: "flex",
+                            flexDirection: "column",
+                            justifyContent: "space-between",
+                          }}
+                        >
+                          <div>
+                            {/* Card Header: ULPIN & Status Badge */}
+                            <div
+                              style={{
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                                marginBottom: 8,
+                                flexWrap: "wrap",
+                                gap: 6,
+                              }}
+                            >
+                              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                <span
+                                  style={{
+                                    fontSize: 13,
+                                    fontWeight: 700,
+                                    fontFamily: "monospace",
+                                    color: "var(--brand-primary)",
+                                    background: "rgba(2, 132, 199, 0.08)",
+                                    padding: "2px 8px",
+                                    borderRadius: 4,
+                                    border: "1px solid rgba(2, 132, 199, 0.2)",
+                                  }}
+                                >
+                                  {p.ulpin || `P-${p.survey_number}`}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleCopyUlpin(p.ulpin || p.parcel_id)}
+                                  title="Copy ULPIN"
+                                  style={{
+                                    border: "none",
+                                    background: "transparent",
+                                    cursor: "pointer",
+                                    color: isCopied ? "var(--status-success)" : "var(--text-secondary)",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    padding: 2,
+                                  }}
+                                >
+                                  {isCopied ? <Lucide.Check size={14} /> : <Lucide.Copy size={14} />}
+                                </button>
+                              </div>
+
+                              <span
+                                className={`badge ${
+                                  isDisputed
+                                    ? "badge-error"
+                                    : isEncumbered
+                                      ? "badge-warning"
+                                      : "badge-success"
+                                }`}
+                                style={{ fontSize: 11, fontWeight: 700 }}
+                              >
+                                {isDisputed
+                                  ? "✕ Title Disputed (Court Stay)"
+                                  : isEncumbered
+                                    ? "🏦 Bank Mortgaged"
+                                    : "✓ Clear Title Sanctioned"}
+                              </span>
+                            </div>
+
+                            {/* Plot and RoR Titles */}
+                            <div
+                              style={{
+                                fontSize: 14,
+                                fontWeight: 700,
+                                color: "var(--text-primary)",
+                                marginBottom: 4,
+                              }}
+                            >
+                              Plot #{p.survey_number} • Khata #{p.khata_number || "105"} (Khesra #{p.khesra_number || p.survey_number})
+                            </div>
+
+                            <div
+                              style={{
+                                fontSize: 12,
+                                color: "var(--text-secondary)",
+                                marginBottom: 12,
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 4,
+                              }}
+                            >
+                              <Lucide.MapPin size={12} />
+                              {p.village_code || "Mauza Arghawa (33)"}, {p.subdistrict_code || "Basopatti"}, Bihar
+                            </div>
+
+                            {/* Property Details Grid */}
+                            <div
+                              style={{
+                                display: "grid",
+                                gridTemplateColumns: "1fr 1fr",
+                                gap: "6px 12px",
+                                fontSize: 12,
+                                background: "var(--bg-card)",
+                                padding: "8px 12px",
+                                borderRadius: 6,
+                                border: "1px solid var(--border-default)",
+                                marginBottom: 12,
+                              }}
+                            >
+                              <div>
+                                <span style={{ color: "var(--text-secondary)" }}>Area: </span>
+                                <strong>{areaSqm.toLocaleString()} sq.m</strong>
+                                <span style={{ fontSize: 10, color: "var(--text-tertiary)", marginLeft: 2 }}>({areaHa} Ha)</span>
+                              </div>
+                              <div>
+                                <span style={{ color: "var(--text-secondary)" }}>Classification: </span>
+                                <strong>{p.land_type || p.land_classification || "Agricultural"}</strong>
+                              </div>
+                              <div>
+                                <span style={{ color: "var(--text-secondary)" }}>Ownership: </span>
+                                <strong>{(Number(p.ownership_share || 1) * 100).toFixed(0)}% Share</strong>
+                              </div>
+                              <div>
+                                <span style={{ color: "var(--text-secondary)" }}>Property Tax: </span>
+                                <strong style={{ color: p.tax_status === "UNPAID" ? "var(--status-warning)" : "var(--status-success)" }}>
+                                  {p.tax_status === "UNPAID" ? "Arrears Due" : "Paid (2024-25)"}
+                                </strong>
+                              </div>
+                              <div style={{ gridColumn: "1 / -1", borderTop: "1px solid var(--border-default)", paddingTop: 4, fontSize: 11, color: "var(--text-secondary)" }}>
+                                👤 <strong>Recorded Raiyat:</strong> {p.owner_name || currentUser.name} ({p.father_husband || "S/o Shri Bihar Bhumi"})
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Action Buttons */}
+                          <div
+                            style={{
+                              display: "flex",
+                              gap: 6,
+                              flexWrap: "wrap",
+                              borderTop: "1px solid var(--border-default)",
+                              paddingTop: 10,
+                            }}
+                          >
+                            <Link
+                              href={`/parcel/${p.ulpin || p.parcel_id}`}
+                              className="btn btn-secondary"
+                              style={{ fontSize: 11, padding: "5px 10px", display: "inline-flex", alignItems: "center", gap: 4 }}
+                            >
+                              <Lucide.FileText size={12} /> Land 360°
+                            </Link>
+                            <Link
+                              href={`/map?parcel=${p.ulpin || p.survey_number}`}
+                              className="btn btn-outline"
+                              style={{ fontSize: 11, padding: "5px 10px", display: "inline-flex", alignItems: "center", gap: 4 }}
+                            >
+                              <Lucide.Compass size={12} /> View Map
+                            </Link>
+                            <Link
+                              href={`/services/mutation?parcel=${p.ulpin || p.survey_number}`}
+                              className="btn btn-primary"
+                              style={{ fontSize: 11, padding: "5px 10px", display: "inline-flex", alignItems: "center", gap: 4 }}
+                            >
+                              <Lucide.FileSignature size={12} /> Apply Mutation
+                            </Link>
+                            <Link
+                              href={`/services/building-permission?parcel=${p.ulpin || p.survey_number}`}
+                              className="btn btn-outline"
+                              style={{ fontSize: 11, padding: "5px 8px" }}
+                            >
+                              Building NOC
+                            </Link>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div
+                    style={{
+                      padding: "var(--space-xl)",
+                      textAlign: "center",
+                      background: "var(--bg-elevated)",
+                      borderRadius: 8,
+                      border: "1px dashed var(--border-default)",
+                    }}
+                  >
+                    <Lucide.MapPinOff size={32} color="var(--text-tertiary)" style={{ margin: "0 auto 8px" }} />
+                    <h4 style={{ margin: "0 0 4px", fontSize: 15, fontWeight: 700 }}>No Land Parcels Linked to this Profile</h4>
+                    <p style={{ fontSize: 13, color: "var(--text-secondary)", maxWidth: 450, margin: "0 auto 12px" }}>
+                      Use the search bar above to link your land parcel by ULPIN or Plot number, or apply for fresh land mutation in Citizen Services.
+                    </p>
+                    <Link href="/services/mutation" className="btn btn-primary" style={{ fontSize: 12 }}>
+                      Apply for Land Mutation & RoR →
+                    </Link>
+                  </div>
+                )}
               </div>
 
               {/* Active Service Applications */}
