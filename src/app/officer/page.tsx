@@ -819,12 +819,20 @@ export default function OfficerPortal() {
                         }}
                       >
                         {workflow.stages.map((stg, i) => {
-                          const isDone =
-                            app.status === "APPROVED" || i < currentStageIdx;
-                          const isCurrent =
-                            app.status !== "APPROVED" &&
-                            app.status !== "REJECTED" &&
-                            i === currentStageIdx;
+                          const isRejected = app.status === "REJECTED";
+                          const isApproved =
+                            app.status === "APPROVED" ||
+                            app.status === "COMPLETED";
+
+                          const isStageApproved =
+                            isApproved || i < currentStageIdx;
+                          const isStageRejected =
+                            isRejected && i === currentStageIdx;
+                          const isStageActive =
+                            !isApproved && !isRejected && i === currentStageIdx;
+                          const isStageHalted =
+                            isRejected && i > currentStageIdx;
+
                           return (
                             <div
                               key={stg.stage}
@@ -832,14 +840,22 @@ export default function OfficerPortal() {
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "space-between",
-                                padding: "6px 10px",
+                                padding: "8px 12px",
                                 borderRadius: 6,
-                                background: isCurrent
-                                  ? "rgba(2, 132, 199, 0.08)"
-                                  : "transparent",
-                                border: isCurrent
-                                  ? "1px solid var(--brand-primary)"
-                                  : "1px solid transparent",
+                                background: isStageRejected
+                                  ? "rgba(239, 68, 68, 0.08)"
+                                  : isStageApproved
+                                    ? "rgba(16, 185, 129, 0.06)"
+                                    : isStageActive
+                                      ? "rgba(2, 132, 199, 0.08)"
+                                      : "transparent",
+                                border: isStageRejected
+                                  ? "1px solid rgba(239, 68, 68, 0.35)"
+                                  : isStageActive
+                                    ? "1px solid var(--brand-primary)"
+                                    : isStageApproved
+                                      ? "1px solid rgba(16, 185, 129, 0.25)"
+                                      : "1px solid var(--border-color)",
                               }}
                             >
                               <div
@@ -851,32 +867,45 @@ export default function OfficerPortal() {
                               >
                                 <div
                                   style={{
-                                    width: 20,
-                                    height: 20,
+                                    width: 22,
+                                    height: 22,
                                     borderRadius: "50%",
                                     fontSize: 10,
-                                    fontWeight: 700,
+                                    fontWeight: 800,
                                     display: "flex",
                                     alignItems: "center",
                                     justifyContent: "center",
-                                    background: isDone
+                                    background: isStageApproved
                                       ? "var(--status-success)"
-                                      : isCurrent
-                                        ? "var(--brand-primary)"
-                                        : "var(--border-color)",
+                                      : isStageRejected
+                                        ? "var(--status-error, #ef4444)"
+                                        : isStageActive
+                                          ? "var(--brand-primary)"
+                                          : "var(--border-color)",
                                     color: "#fff",
                                   }}
                                 >
-                                  {isDone ? "✓" : stg.stage}
+                                  {isStageApproved
+                                    ? "✓"
+                                    : isStageRejected
+                                      ? "✕"
+                                      : stg.stage}
                                 </div>
                                 <div>
                                   <div
                                     style={{
                                       fontSize: 12,
-                                      fontWeight: isCurrent ? 700 : 500,
-                                      color: isCurrent
-                                        ? "var(--text-primary)"
-                                        : "var(--text-secondary)",
+                                      fontWeight:
+                                        isStageActive || isStageRejected
+                                          ? 700
+                                          : 600,
+                                      color: isStageRejected
+                                        ? "#b91c1c"
+                                        : isStageActive
+                                          ? "var(--text-primary)"
+                                          : isStageApproved
+                                            ? "#047857"
+                                            : "var(--text-secondary)",
                                     }}
                                   >
                                     Stage {stg.stage}: {stg.department}
@@ -892,14 +921,26 @@ export default function OfficerPortal() {
                                 </div>
                               </div>
                               <span
-                                className={`badge ${isDone ? "badge-success" : isCurrent ? "badge-warning" : "badge-neutral"}`}
-                                style={{ fontSize: 10 }}
+                                className={`badge ${
+                                  isStageApproved
+                                    ? "badge-success"
+                                    : isStageRejected
+                                      ? "badge-error"
+                                      : isStageActive
+                                        ? "badge-warning"
+                                        : "badge-neutral"
+                                }`}
+                                style={{ fontSize: 10, padding: "3px 8px" }}
                               >
-                                {isDone
-                                  ? "Approved"
-                                  : isCurrent
-                                    ? "In Review (Desk)"
-                                    : "Next Queue"}
+                                {isStageApproved
+                                  ? `✓ Approved by ${stg.deptCode}`
+                                  : isStageRejected
+                                    ? `✕ Rejected by ${stg.deptCode}`
+                                    : isStageActive
+                                      ? `⏱️ In Review (${stg.deptCode})`
+                                      : isStageHalted
+                                        ? "🚫 Halted"
+                                        : "Pending"}
                               </span>
                             </div>
                           );

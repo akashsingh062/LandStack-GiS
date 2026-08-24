@@ -735,6 +735,20 @@ a:hover { text-decoration: underline; }
   box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.2);
 }
 
+.status-step-dot.rejected {
+  background: var(--status-error, #ef4444);
+  border-color: var(--status-error, #ef4444);
+  color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
+}
+
+.status-step-dot.halted {
+  background: var(--bg-elevated);
+  border-color: var(--border-default);
+  color: var(--text-tertiary);
+  opacity: 0.5;
+}
+
 .status-step-label {
   font-size: 10px;
   color: var(--text-tertiary);
@@ -752,6 +766,10 @@ a:hover { text-decoration: underline; }
 
 .status-step-line.completed {
   background: var(--status-success);
+}
+
+.status-step-line.rejected {
+  background: var(--status-error, #ef4444);
 }
 
 /* ── Alerts ── */

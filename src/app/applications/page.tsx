@@ -24,24 +24,57 @@ function getSteps(serviceType: string, currentStatus: string, currentStep?: stri
   const currentStageIdx = getCurrentStageIndex(workflow, currentStep);
 
   if (currentStatus === "REJECTED") {
-    const steps = workflow.stages.slice(0, currentStageIdx + 1).map((s, i) => ({
-      label: `${s.deptCode}: ${s.name}`,
-      status: i < currentStageIdx ? "completed" : "current",
-    }));
-    steps.push({ label: "Rejected", status: "current" });
-    return steps;
+    return workflow.stages.map((stage, i) => {
+      if (i < currentStageIdx) {
+        return {
+          label: `${stage.deptCode}: Approved`,
+          status: "completed",
+          symbol: "✓",
+          lineClass: i < currentStageIdx - 1 ? "completed" : "rejected",
+        };
+      }
+      if (i === currentStageIdx) {
+        return {
+          label: `${stage.deptCode}: Rejected`,
+          status: "rejected",
+          symbol: "✕",
+          lineClass: "",
+        };
+      }
+      return {
+        label: `${stage.deptCode}: Halted`,
+        status: "halted",
+        symbol: "—",
+        lineClass: "",
+      };
+    });
   }
 
   const isApproved = currentStatus === "APPROVED" || currentStatus === "COMPLETED";
 
   return workflow.stages.map((stage, i) => {
     if (isApproved || i < currentStageIdx) {
-      return { label: `${stage.deptCode}: ${stage.name}`, status: "completed" };
+      return {
+        label: `${stage.deptCode}: Approved`,
+        status: "completed",
+        symbol: "✓",
+        lineClass: "completed",
+      };
     }
     if (i === currentStageIdx) {
-      return { label: `${stage.deptCode}: ${stage.name}`, status: "current" };
+      return {
+        label: `${stage.deptCode}: In Review`,
+        status: "current",
+        symbol: "●",
+        lineClass: "",
+      };
     }
-    return { label: `${stage.deptCode}: ${stage.name}`, status: "pending" };
+    return {
+      label: `${stage.deptCode}: Pending`,
+      status: "pending",
+      symbol: `${stage.stage}`,
+      lineClass: "",
+    };
   });
 }
 
@@ -281,12 +314,12 @@ export default function ApplicationsPage() {
                       <div key={i} style={{ display: "contents" }}>
                         <div className="status-step">
                           <div className={`status-step-dot ${step.status}`}>
-                            {step.status === "completed" ? "✓" : step.status === "current" ? "●" : ""}
+                            {step.symbol}
                           </div>
                           <div className="status-step-label">{step.label}</div>
                         </div>
                         {i < steps.length - 1 && (
-                          <div className={`status-step-line ${step.status === "completed" ? "completed" : ""}`} />
+                          <div className={`status-step-line ${step.lineClass || (step.status === "completed" ? "completed" : "")}`} />
                         )}
                       </div>
                     ))}
@@ -319,27 +352,189 @@ export default function ApplicationsPage() {
                 {(() => {
                   const wf = getWorkflowDefinition(app.service_type);
                   const curIdx = getCurrentStageIndex(wf, app.current_step);
+                  const isRejected = app.status === "REJECTED";
+                  const isApproved =
+                    app.status === "APPROVED" || app.status === "COMPLETED";
+
                   return (
-                    <div style={{ background: "var(--bg-elevated)", padding: 12, borderRadius: 8, border: "1px solid var(--border-default)", marginBottom: "var(--space-md)" }}>
-                      <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8, color: "var(--brand-primary)" }}>
-                        🏛️ Multi-Department Workflow Journey ({wf.stages.length} Stages)
+                    <div
+                      style={{
+                        background: "var(--bg-elevated)",
+                        padding: "14px 16px",
+                        borderRadius: 8,
+                        border: "1px solid var(--border-default)",
+                        marginBottom: "var(--space-md)",
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          marginBottom: 10,
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontSize: 12,
+                            fontWeight: 700,
+                            color: "var(--brand-primary)",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 6,
+                          }}
+                        >
+                          <span>🏛️ Statutory Inter-Department Flow</span>
+                          <span
+                            style={{
+                              fontSize: 11,
+                              color: "var(--text-tertiary)",
+                            }}
+                          >
+                            ({wf.stages.length} Stages)
+                          </span>
+                        </div>
+                        <span
+                          className={`badge ${
+                            isApproved
+                              ? "badge-success"
+                              : isRejected
+                                ? "badge-error"
+                                : "badge-info"
+                          }`}
+                          style={{ fontSize: 10, padding: "2px 8px" }}
+                        >
+                          {isApproved
+                            ? "✓ All Stages Approved"
+                            : isRejected
+                              ? `✕ Rejected by Stage ${curIdx + 1} (${wf.stages[curIdx]?.deptCode || app.department})`
+                              : `Active at Stage ${curIdx + 1}`}
+                        </span>
                       </div>
-                      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 8,
+                        }}
+                      >
                         {wf.stages.map((stg, i) => {
-                          const isDone = app.status === "APPROVED" || i < curIdx;
-                          const isCurrent = app.status !== "APPROVED" && app.status !== "REJECTED" && i === curIdx;
+                          const isStageApproved = isApproved || i < curIdx;
+                          const isStageRejected = isRejected && i === curIdx;
+                          const isStageActive =
+                            !isApproved && !isRejected && i === curIdx;
+                          const isStageHalted = isRejected && i > curIdx;
+
                           return (
-                            <div key={stg.stage} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 11, padding: "4px 6px", borderRadius: 4, background: isCurrent ? "rgba(2, 132, 199, 0.08)" : "transparent" }}>
-                              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                                <span style={{ width: 16, height: 16, borderRadius: "50%", background: isDone ? "var(--status-success)" : isCurrent ? "var(--brand-primary)" : "var(--border-strong)", color: "#fff", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 700 }}>
-                                  {isDone ? "✓" : stg.stage}
+                            <div
+                              key={stg.stage}
+                              style={{
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                                fontSize: 12,
+                                padding: "8px 12px",
+                                borderRadius: 6,
+                                background: isStageRejected
+                                  ? "rgba(239, 68, 68, 0.08)"
+                                  : isStageApproved
+                                    ? "rgba(16, 185, 129, 0.06)"
+                                    : isStageActive
+                                      ? "rgba(2, 132, 199, 0.08)"
+                                      : "transparent",
+                                border: isStageRejected
+                                  ? "1px solid rgba(239, 68, 68, 0.4)"
+                                  : isStageActive
+                                    ? "1px solid var(--brand-primary)"
+                                    : isStageApproved
+                                      ? "1px solid rgba(16, 185, 129, 0.25)"
+                                      : "1px solid var(--border-default)",
+                              }}
+                            >
+                              <div
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 10,
+                                }}
+                              >
+                                <span
+                                  style={{
+                                    width: 22,
+                                    height: 22,
+                                    borderRadius: "50%",
+                                    background: isStageApproved
+                                      ? "var(--status-success)"
+                                      : isStageRejected
+                                        ? "var(--status-error, #ef4444)"
+                                        : isStageActive
+                                          ? "var(--brand-primary)"
+                                          : "var(--border-strong)",
+                                    color: "#fff",
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    fontSize: 10,
+                                    fontWeight: 800,
+                                  }}
+                                >
+                                  {isStageApproved
+                                    ? "✓"
+                                    : isStageRejected
+                                      ? "✕"
+                                      : stg.stage}
                                 </span>
-                                <span style={{ fontWeight: isCurrent ? 700 : 500, color: isCurrent ? "var(--text-primary)" : "var(--text-secondary)" }}>
-                                  Stage {stg.stage}: {stg.department}
-                                </span>
+                                <div>
+                                  <div
+                                    style={{
+                                      fontWeight:
+                                        isStageActive || isStageRejected
+                                          ? 700
+                                          : 600,
+                                      color: isStageRejected
+                                        ? "#b91c1c"
+                                        : isStageActive
+                                          ? "var(--text-primary)"
+                                          : isStageApproved
+                                            ? "#047857"
+                                            : "var(--text-secondary)",
+                                    }}
+                                  >
+                                    Stage {stg.stage}: {stg.department}
+                                  </div>
+                                  <div
+                                    style={{
+                                      fontSize: 10,
+                                      color: "var(--text-tertiary)",
+                                    }}
+                                  >
+                                    {stg.name}
+                                  </div>
+                                </div>
                               </div>
-                              <span className={`badge ${isDone ? "badge-success" : isCurrent ? "badge-warning" : "badge-neutral"}`} style={{ fontSize: 9, padding: "2px 6px" }}>
-                                {isDone ? "Cleared" : isCurrent ? "Active Verification" : "Pending"}
+
+                              <span
+                                className={`badge ${
+                                  isStageApproved
+                                    ? "badge-success"
+                                    : isStageRejected
+                                      ? "badge-error"
+                                      : isStageActive
+                                        ? "badge-warning"
+                                        : "badge-neutral"
+                                }`}
+                                style={{ fontSize: 10, padding: "3px 8px" }}
+                              >
+                                {isStageApproved
+                                  ? `✓ Approved by ${stg.deptCode}`
+                                  : isStageRejected
+                                    ? `✕ Rejected by ${stg.deptCode}`
+                                    : isStageActive
+                                      ? `⏱️ In Review (${stg.deptCode})`
+                                      : isStageHalted
+                                        ? "🚫 Halted"
+                                        : "Pending"}
                               </span>
                             </div>
                           );
