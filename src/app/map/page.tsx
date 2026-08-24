@@ -925,13 +925,7 @@ function MapContent() {
             <SlidersHorizontal size={14} /> {!isMobile && "Filter"}
           </button>
 
-          <Link href="/admin/intelligence" style={{ textDecoration: "none" }}>
-            <div style={{ background: "rgba(16, 185, 129, 0.12)", border: "1px solid rgba(16, 185, 129, 0.3)", color: "#059669", padding: isMobile ? "5px 8px" : "6px 10px", borderRadius: 6, fontSize: isMobile ? 11 : 12, fontWeight: 700, display: "flex", alignItems: "center", gap: 6, transition: "all 0.15s ease" }}>
-              <Sparkles size={14} />
-              {!isMobile && <span>AI Insights</span>}
-              <span style={{ background: "#10b981", color: "#fff", borderRadius: "50%", width: 16, height: 16, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 800 }}>8</span>
-            </div>
-          </Link>
+
 
           {!isMobile && (
             <Link href="/login" style={{ textDecoration: "none" }}>

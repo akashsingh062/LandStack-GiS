@@ -573,7 +573,7 @@ export default function Dashboard() {
           { icon: <Lucide.Building2 size={24} color="var(--brand-primary)" />, name: "Building Plan Desk", desc: "Sanction residential & commercial plans", href: "/officer" },
           { icon: <Lucide.Compass size={24} color="var(--brand-primary)" />, name: "Master Plan 2035 GIS", desc: "Evaluate zoning and land-use compliance", href: "/map" },
           { icon: <Lucide.Trees size={24} color="var(--brand-primary)" />, name: "Environmental Buffer Audit", desc: "Verify river & canal setback zones", href: "/map" },
-          { icon: <Lucide.Sparkles size={24} color="var(--brand-primary)" />, name: "AI Geospatial Change", desc: "Satellite change detection radar", href: "/admin/intelligence" },
+          { icon: <Lucide.CheckCircle2 size={24} color="var(--brand-primary)" />, name: "Planning NOC Sanctions", desc: "Town planning statutory clearance queue", href: "/officer" },
         ].map((s) => (
           <motion.div
             key={s.name}

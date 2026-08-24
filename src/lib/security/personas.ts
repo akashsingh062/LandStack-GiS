@@ -135,7 +135,7 @@ export const DEMO_PERSONAS: UserPersona[] = [
     circleCode: "ALL",
     description:
       "Cross-department governance, state-wide spatial KPIs, inter-departmental conflict arbitration, and strategic policy oversight.",
-    landingUrl: "/admin/intelligence",
+    landingUrl: "/admin",
     email: "sec.revenue@bihar.gov.in",
     phone: "+91 94310 99999",
   },

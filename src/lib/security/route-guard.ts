@@ -64,9 +64,8 @@ export const ALL_NAV_SECTIONS: NavSection[] = [
     ],
   },
   {
-    label: "Intelligence & Standards",
+    label: "Governance & Standards",
     items: [
-      { href: "/admin/intelligence", icon: "Brain", label: "AI & Satellite AI", allowedRoles: ["ADMIN", "SUPER_ADMIN", "PLANNING_OFFICER", "REVENUE_OFFICER"] },
       { href: "/admin/adapters", icon: "Plug", label: "State Adapters", allowedRoles: ["ADMIN", "SUPER_ADMIN"] },
       { href: "/admin/security", icon: "Shield", label: "Security & Audit", allowedRoles: ["ADMIN", "SUPER_ADMIN", "AUDITOR"] },
       { href: "/admin", icon: "Settings", label: "Admin Overview", allowedRoles: ["ADMIN", "SUPER_ADMIN"] },
@@ -87,7 +86,6 @@ export const ROUTE_ACCESS_RULES: { prefix: string; exact?: boolean; allowedRoles
   { prefix: "/applications", allowedRoles: ["CITIZEN", "ADMIN", "SUPER_ADMIN"] },
   { prefix: "/officer/conflicts", allowedRoles: ["REVENUE_OFFICER", "PLANNING_OFFICER", "ADMIN", "SUPER_ADMIN", "AUDITOR"] },
   { prefix: "/officer", allowedRoles: OFFICER_ROLES },
-  { prefix: "/admin/intelligence", allowedRoles: ["ADMIN", "SUPER_ADMIN", "PLANNING_OFFICER", "REVENUE_OFFICER"] },
   { prefix: "/admin/security", allowedRoles: ["ADMIN", "SUPER_ADMIN", "AUDITOR"] },
   { prefix: "/admin/adapters", allowedRoles: ["ADMIN", "SUPER_ADMIN"] },
   { prefix: "/admin/import", allowedRoles: ["ADMIN", "SUPER_ADMIN"] },

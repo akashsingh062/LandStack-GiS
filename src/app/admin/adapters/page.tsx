@@ -65,8 +65,8 @@ export default function AdaptersStudio() {
           <p className="page-subtitle">Demonstrates national-scale interoperability by normalizing heterogeneous state land records into a single Common LandStack Schema.</p>
         </div>
         <div style={{ display: "flex", gap: "var(--space-sm)" }}>
-          <Link href="/admin/intelligence" className="btn btn-outline" style={{ fontSize: 12 }}>
-            🧠 AI Intelligence
+          <Link href="/admin" className="btn btn-outline" style={{ fontSize: 12 }}>
+            ← Admin Overview
           </Link>
           <Link href="/map" className="btn btn-primary" style={{ fontSize: 12 }}>
             🗺️ Open GIS Map
