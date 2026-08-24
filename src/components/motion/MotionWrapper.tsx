@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { motion, AnimatePresence, Variants } from "framer-motion";
+import { motion, AnimatePresence, type Variants } from "framer-motion";
 
 // Page Entrance Animation
 export const pageVariants: Variants = {
@@ -73,63 +73,78 @@ export const popIn: Variants = {
   },
 };
 
-// Slide In From Right (for Drawers & Details Panels)
-export const slideInRight: Variants = {
-  initial: {
-    x: 40,
-    opacity: 0,
-  },
-  animate: {
-    x: 0,
-    opacity: 1,
-    transition: {
-      type: "spring",
-      damping: 26,
-      stiffness: 300,
-    },
-  },
-  exit: {
-    x: 40,
-    opacity: 0,
-    transition: {
-      duration: 0.2,
-      ease: "easeIn",
-    },
-  },
-};
+// Reusable animated page wrapper
+export function PageMotionWrapper({
+  children,
+  className = "app-content",
+  style,
+}: {
+  children: React.ReactNode;
+  className?: string;
+  style?: React.CSSProperties;
+}) {
+  return (
+    <motion.div
+      className={className}
+      variants={pageVariants}
+      initial="initial"
+      animate="animate"
+      exit="exit"
+      style={style}
+    >
+      {children}
+    </motion.div>
+  );
+}
 
-// Slide In From Bottom (for Mobile Sheets & Modals)
-export const slideInBottom: Variants = {
-  initial: {
-    y: "100%",
-    opacity: 0,
-  },
-  animate: {
-    y: 0,
-    opacity: 1,
-    transition: {
-      type: "spring",
-      damping: 28,
-      stiffness: 320,
-    },
-  },
-  exit: {
-    y: "100%",
-    opacity: 0,
-    transition: {
-      duration: 0.22,
-      ease: "easeIn",
-    },
-  },
-};
+// Reusable animated list / grid container
+export function MotionStaggerContainer({
+  children,
+  className,
+  style,
+}: {
+  children: React.ReactNode;
+  className?: string;
+  style?: React.CSSProperties;
+}) {
+  return (
+    <motion.div
+      className={className}
+      variants={staggerContainer}
+      initial="initial"
+      animate="animate"
+      style={style}
+    >
+      {children}
+    </motion.div>
+  );
+}
 
-// Export convenience motion components
-export const MotionDiv = motion.div;
-export const MotionSection = motion.section;
-export const MotionArticle = motion.article;
-export const MotionButton = motion.button;
-export const MotionSpan = motion.span;
-export const MotionTr = motion.tr;
-export const MotionUl = motion.ul;
-export const MotionLi = motion.li;
-export { AnimatePresence };
+// Reusable animated card / item
+export function MotionCardItem({
+  children,
+  className = "card",
+  style,
+  onClick,
+}: {
+  children: React.ReactNode;
+  className?: string;
+  style?: React.CSSProperties;
+  onClick?: () => void;
+}) {
+  return (
+    <motion.div
+      className={className}
+      variants={fadeUpItem}
+      whileHover={{ y: -3, transition: { duration: 0.2 } }}
+      whileTap={{ scale: 0.99 }}
+      style={style}
+      onClick={onClick}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+export { AnimatePresence, motion };
+export default PageMotionWrapper;
