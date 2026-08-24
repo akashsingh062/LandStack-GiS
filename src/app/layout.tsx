@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { AuthProvider, useAuth, DEMO_PERSONAS, getLucideIcon } from "@/lib/security/auth-context";
 import { LanguageProvider, useLanguage } from "@/lib/i18n/language-context";
+import { SidebarProvider, useSidebar } from "@/lib/sidebar-context";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { getFilteredNavSections } from "@/lib/security/route-guard";
 import { RouteGuard } from "@/components/RouteGuard";
@@ -38,7 +39,7 @@ function getLocalizedSectionLabel(label: string, t: (k: string) => string): stri
   return label;
 }
 
-function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+function Sidebar({ isOpen, onClose, isOverlay }: { isOpen: boolean; onClose: () => void; isOverlay?: boolean }) {
   const pathname = usePathname();
   const { currentUser, getInitials, isMounted } = useAuth();
   const { t } = useLanguage();
@@ -47,14 +48,14 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) 
 
   return (
     <>
-      {/* Mobile Backdrop */}
+      {/* Mobile / Overlay Backdrop */}
       <div
         className={`sidebar-backdrop ${isOpen ? "active" : ""}`}
         onClick={onClose}
         aria-hidden="true"
       />
 
-      <aside className={`app-sidebar ${isOpen ? "open" : ""}`}>
+      <aside className={`app-sidebar ${isOverlay ? "overlay-mode" : ""} ${isOpen ? "open" : ""}`}>
         <div className="sidebar-logo" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <span className="sidebar-logo-text" style={{ color: "var(--brand-primary)", fontWeight: 800 }}>SIH 2026</span>
           <button
@@ -66,7 +67,10 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) 
               cursor: "pointer",
               padding: 4,
               color: "var(--text-tertiary)",
-              display: "none",
+              display: (isOpen || isOverlay) ? "flex" : "none",
+              alignItems: "center",
+              justifyContent: "center",
+              borderRadius: 6,
             }}
             aria-label="Close sidebar"
           >
@@ -221,15 +225,8 @@ function MobileBottomNav({ onToggleMenu }: { onToggleMenu: () => void }) {
 
 function AppShellWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [prevPathname, setPrevPathname] = useState(pathname);
+  const { isOpen, closeSidebar, toggleSidebar, isMapPage } = useSidebar();
   const isLoginPage = pathname === "/login";
-
-  // Automatically adjust mobile menu state on route transitions without cascading effects
-  if (prevPathname !== pathname) {
-    setPrevPathname(pathname);
-    setIsMobileMenuOpen(false);
-  }
 
   if (isLoginPage) {
     return (
@@ -240,13 +237,17 @@ function AppShellWrapper({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="app-shell">
-      <MobileHeader onToggleMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)} isOpen={isMobileMenuOpen} />
-      <Sidebar isOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)} />
-      <main className="app-main">
+    <div className={`app-shell ${isMapPage ? "map-mode" : ""}`}>
+      {!isMapPage && (
+        <MobileHeader onToggleMenu={toggleSidebar} isOpen={isOpen} />
+      )}
+      <Sidebar isOpen={isOpen} onClose={closeSidebar} isOverlay={isMapPage} />
+      <main className={`app-main ${isMapPage ? "app-main-map" : ""}`}>
         <RouteGuard>{children}</RouteGuard>
       </main>
-      <MobileBottomNav onToggleMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)} />
+      {!isMapPage && (
+        <MobileBottomNav onToggleMenu={toggleSidebar} />
+      )}
     </div>
   );
 }
@@ -268,7 +269,9 @@ export default function RootLayout({
       <body>
         <LanguageProvider>
           <AuthProvider>
-            <AppShellWrapper>{children}</AppShellWrapper>
+            <SidebarProvider>
+              <AppShellWrapper>{children}</AppShellWrapper>
+            </SidebarProvider>
           </AuthProvider>
         </LanguageProvider>
       </body>

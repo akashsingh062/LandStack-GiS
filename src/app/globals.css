@@ -118,6 +118,7 @@ a:hover { text-decoration: underline; }
 .app-shell {
   display: flex;
   height: 100vh;
+  height: 100dvh;
   overflow: hidden;
 }
 
@@ -129,7 +130,37 @@ a:hover { text-decoration: underline; }
   flex-direction: column;
   flex-shrink: 0;
   z-index: 100;
-  transition: width var(--transition-normal);
+  transition: all var(--transition-normal);
+}
+
+/* Overlay Mode for Sidebar (used on full-screen Map page) */
+.app-sidebar.overlay-mode {
+  position: fixed !important;
+  top: 0 !important;
+  left: -320px !important;
+  width: 280px !important;
+  height: 100vh !important;
+  height: 100dvh !important;
+  z-index: 250 !important;
+  box-shadow: 6px 0 32px rgba(0, 0, 0, 0.22) !important;
+  transition: left 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.app-sidebar.overlay-mode.open {
+  left: 0 !important;
+}
+
+.sidebar-backdrop {
+  display: none;
+}
+
+.sidebar-backdrop.active {
+  display: block !important;
+  position: fixed !important;
+  inset: 0 !important;
+  background: rgba(15, 23, 42, 0.45) !important;
+  backdrop-filter: blur(4px) !important;
+  z-index: 240 !important;
 }
 
 .app-main {
@@ -138,6 +169,14 @@ a:hover { text-decoration: underline; }
   flex-direction: column;
   overflow: hidden;
   background: var(--bg-app);
+}
+
+.app-main.app-main-map {
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  padding: 0;
+  margin: 0;
 }
 
 .app-content {
