@@ -36,6 +36,8 @@ import {
   ExternalLink,
   ChevronDown,
   ChevronUp,
+  ChevronLeft,
+  ChevronRight,
   Scale,
   Lock,
   Trees,
