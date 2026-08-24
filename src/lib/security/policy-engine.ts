@@ -1,6 +1,6 @@
 /**
- * LandStack — Policy Engine (RBAC + ABAC + Geographic Scope) (Step 16.8)
- * Enforces dynamic multi-layered authorization policies
+ * LandStack — Policy Engine (RBAC + ABAC + Geographic Jurisdiction Scope)
+ * Enforces dynamic multi-layered authorization policies (SIH 2026 PS #26014)
  */
 
 import { PolicyEvaluationRequest, PolicyEvaluationResult } from "./types";
@@ -23,7 +23,14 @@ export function evaluateAccessPolicy(req: PolicyEvaluationRequest): PolicyEvalua
 
   // 2. Attribute & Geographic Scope Check (ABAC)
   // Read-only public actions bypass geographic restrictions
-  const isPublicRead = ["SEARCH_PUBLIC_PARCEL", "VIEW_PUBLIC_GIS"].includes(action);
+  const isPublicRead = [
+    "parcel.search",
+    "parcel.read",
+    "land360.view",
+    "SEARCH_PUBLIC_PARCEL",
+    "VIEW_PUBLIC_GIS"
+  ].includes(action);
+
   if (isPublicRead) {
     return {
       allowed: true,
@@ -33,20 +40,30 @@ export function evaluateAccessPolicy(req: PolicyEvaluationRequest): PolicyEvalua
     };
   }
 
-  // Admins have nationwide wildcard scope
-  if (principal.role === "ADMIN" || principal.scope.state_code === "*") {
+  // Super Admin and System Admin have statewide / nationwide master authority
+  if (
+    principal.role === "ADMIN" ||
+    principal.role === "SUPER_ADMIN" ||
+    principal.scope.state_code === "*" ||
+    principal.scope.state_code === "ALL"
+  ) {
     return {
       allowed: true,
       decision_code: "ALLOW",
-      reason: "Administrator master authority granted across all jurisdictions.",
+      reason: "Master governance authority granted across all jurisdictions.",
       evaluated_at
     };
   }
 
-  // For state/district officers performing departmental actions:
+  // For departmental officers (Revenue, Registration, Planning) performing state/circle actions:
   if (target_scope && target_scope.state_code) {
     // Check State matching
-    if (principal.scope.state_code !== target_scope.state_code) {
+    if (
+      principal.scope.state_code !== "*" &&
+      principal.scope.state_code !== "ALL" &&
+      target_scope.state_code !== "*" &&
+      principal.scope.state_code.toUpperCase() !== target_scope.state_code.toUpperCase()
+    ) {
       return {
         allowed: false,
         decision_code: "DENIED_OUT_OF_JURISDICTION",
@@ -55,13 +72,17 @@ export function evaluateAccessPolicy(req: PolicyEvaluationRequest): PolicyEvalua
       };
     }
 
-    // Check District matching if specified
+    // Check District matching
+    const pDistrict = (principal.scope.district_code || "").toLowerCase();
+    const tDistrict = (target_scope.district_code || "").toLowerCase();
     if (
-      principal.scope.district_code &&
-      principal.scope.district_code !== "*" &&
-      target_scope.district_code &&
-      target_scope.district_code !== "*" &&
-      principal.scope.district_code.toLowerCase() !== target_scope.district_code.toLowerCase()
+      pDistrict &&
+      pDistrict !== "*" &&
+      pDistrict !== "all" &&
+      tDistrict &&
+      tDistrict !== "*" &&
+      tDistrict !== "all" &&
+      pDistrict !== tDistrict
     ) {
       return {
         allowed: false,
@@ -70,12 +91,34 @@ export function evaluateAccessPolicy(req: PolicyEvaluationRequest): PolicyEvalua
         evaluated_at
       };
     }
+
+    // Check Circle / Anchal matching (specifically for Revenue Circle Officer)
+    const pCircle = (principal.scope.circle_code || principal.scope.subdistrict_code || "").toLowerCase();
+    const tCircle = (target_scope.circle_code || target_scope.subdistrict_code || "").toLowerCase();
+    if (
+      principal.role === "REVENUE_OFFICER" &&
+      pCircle &&
+      pCircle !== "*" &&
+      pCircle !== "all" &&
+      tCircle &&
+      tCircle !== "*" &&
+      tCircle !== "all" &&
+      pCircle !== tCircle
+    ) {
+      return {
+        allowed: false,
+        decision_code: "DENIED_OUT_OF_JURISDICTION",
+        reason: `Circle Jurisdiction Denied: Revenue Officer assigned to Circle '${principal.scope.circle_code || principal.scope.subdistrict_code}', target parcel is in Circle '${target_scope.circle_code || target_scope.subdistrict_code}'.`,
+        evaluated_at
+      };
+    }
   }
 
   return {
     allowed: true,
     decision_code: "ALLOW",
-    reason: `Access Granted: Principal '${principal.name}' (${principal.role}) verified within authorized jurisdiction '${principal.scope.state_code}/${principal.scope.district_code || 'All'}'.`,
+    reason: `Access Granted: Principal '${principal.name}' (${principal.role}) verified within authorized jurisdiction '${principal.scope.state_code}/${principal.scope.district_code || 'All'}/${principal.scope.circle_code || 'All'}'.`,
     evaluated_at
   };
 }
+
