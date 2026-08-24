@@ -1530,8 +1530,8 @@ function MapContent() {
                   )}
 
                   {activeTab === "risk" && (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                      {/* Risk Header Card */}
+                    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                      {/* 1. Header Banner */}
                       <div
                         style={{
                           background:
@@ -1551,7 +1551,7 @@ function MapContent() {
                           padding: "10px 12px",
                         }}
                       >
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
                           <span style={{ fontSize: 11, fontWeight: 800, color: "#0f172a", letterSpacing: "0.06em", display: "flex", alignItems: "center", gap: 5 }}>
                             <ShieldAlert
                               size={14}
@@ -1578,152 +1578,152 @@ function MapContent() {
                                     ? "#d97706"
                                     : "#16a34a",
                               color: "#ffffff",
+                              letterSpacing: "0.04em",
                             }}
                           >
-                            {riskProfile?.compositeLevel || "LOW"} RISK • {riskProfile?.compositeScore ?? 15}/100
+                            {riskProfile?.compositeLevel || "LOW"}
                           </span>
                         </div>
-                        <div style={{ fontSize: 11, color: "#334155", lineHeight: 1.45 }}>
-                          {riskProfile?.recommendation || "All statutory land records, spatial boundaries, and encumbrance checks are verified."}
-                        </div>
-                        <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
-                          <span style={{ fontSize: 9, fontWeight: 800, background: "#fee2e2", color: "#b91c1c", padding: "2px 6px", borderRadius: 4 }}>
+                        <div style={{ display: "flex", gap: 6, marginTop: 6, flexWrap: "wrap" }}>
+                          <span style={{ fontSize: 9, fontWeight: 800, background: "#fee2e2", color: "#b91c1c", padding: "1px 6px", borderRadius: 4 }}>
                             🔴 {riskProfile?.highCount || 0} HIGH
                           </span>
-                          <span style={{ fontSize: 9, fontWeight: 800, background: "#fef3c7", color: "#92400e", padding: "2px 6px", borderRadius: 4 }}>
+                          <span style={{ fontSize: 9, fontWeight: 800, background: "#fef3c7", color: "#92400e", padding: "1px 6px", borderRadius: 4 }}>
                             🟠 {riskProfile?.mediumCount || 0} MEDIUM
                           </span>
-                          <span style={{ fontSize: 9, fontWeight: 800, background: "#dcfce7", color: "#166534", padding: "2px 6px", borderRadius: 4 }}>
+                          <span style={{ fontSize: 9, fontWeight: 800, background: "#dcfce7", color: "#166534", padding: "1px 6px", borderRadius: 4 }}>
                             🟢 {riskProfile?.lowCount || 0} LOW
                           </span>
                         </div>
                       </div>
 
-                      {/* 12 Risk Factors List */}
-                      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                        {(riskProfile?.categories || []).map((cat: any) => {
+                      {/* 2. Simplified Clean Checklist (All 12 Risk Factors) */}
+                      <div
+                        style={{
+                          background: "#ffffff",
+                          border: "1px solid #e2e8f0",
+                          borderRadius: 8,
+                          overflow: "hidden",
+                          boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+                        }}
+                      >
+                        {(riskProfile?.categories || []).map((cat: any, idx: number) => {
                           const isExpanded = expandedRiskKey === cat.key;
-                          const dotColor = cat.level === "HIGH" ? "#dc2626" : cat.level === "MEDIUM" ? "#ea580c" : "#16a34a";
-                          const badgeBg = cat.level === "HIGH" ? "#fee2e2" : cat.level === "MEDIUM" ? "#ffedd5" : "#dcfce7";
-                          const badgeColor = cat.level === "HIGH" ? "#991b1b" : cat.level === "MEDIUM" ? "#9a3412" : "#166534";
+                          const dotEmoji = cat.level === "HIGH" ? "🔴" : cat.level === "MEDIUM" ? "🟠" : "🟢";
+                          const badgeColor = cat.level === "HIGH" ? "#dc2626" : cat.level === "MEDIUM" ? "#d97706" : "#16a34a";
+                          const isLast = idx === (riskProfile?.categories || []).length - 1;
 
                           return (
                             <div
                               key={cat.key}
+                              onClick={() => setExpandedRiskKey(isExpanded ? null : cat.key)}
                               style={{
-                                background: "#ffffff",
-                                border: `1px solid ${isExpanded ? (cat.level === "HIGH" ? "#fca5a5" : "#94a3b8") : "#e2e8f0"}`,
-                                borderRadius: 6,
-                                overflow: "hidden",
-                                transition: "all 0.15s ease",
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                                padding: "7px 12px",
+                                borderBottom: isLast ? "none" : "1px solid #f1f5f9",
+                                cursor: "pointer",
+                                userSelect: "none",
+                                background: isExpanded ? "rgba(2, 132, 199, 0.05)" : "#ffffff",
+                                transition: "background 0.12s ease",
                               }}
                             >
-                              <div
-                                onClick={() => setExpandedRiskKey(isExpanded ? null : cat.key)}
-                                style={{
-                                  display: "flex",
-                                  justifyContent: "space-between",
-                                  alignItems: "center",
-                                  padding: "8px 10px",
-                                  cursor: "pointer",
-                                  userSelect: "none",
-                                  background: isExpanded ? "rgba(2, 132, 199, 0.04)" : "#ffffff",
-                                }}
-                              >
-                                <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-                                  <span
-                                    style={{
-                                      width: 7,
-                                      height: 7,
-                                      borderRadius: "50%",
-                                      background: dotColor,
-                                      flexShrink: 0,
-                                      boxShadow: cat.level === "HIGH" ? "0 0 5px rgba(220, 38, 38, 0.6)" : "none",
-                                    }}
-                                  />
-                                  <span style={{ fontSize: 11, fontWeight: 700, color: "#0f172a" }}>
-                                    {cat.name}
-                                  </span>
-                                </div>
-                                <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                                  <span
-                                    style={{
-                                      fontSize: 9,
-                                      fontWeight: 800,
-                                      padding: "1px 5px",
-                                      borderRadius: 3,
-                                      background: badgeBg,
-                                      color: badgeColor,
-                                      textTransform: "uppercase",
-                                    }}
-                                  >
-                                    {cat.level}
-                                  </span>
-                                  {isExpanded ? <ChevronUp size={13} color="#64748b" /> : <ChevronDown size={13} color="#64748b" />}
-                                </div>
+                              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                <span style={{ fontSize: 11, lineHeight: 1 }}>{dotEmoji}</span>
+                                <span style={{ fontSize: 11, fontWeight: 600, color: "#1e293b" }}>
+                                  {cat.name.replace(/ Risk$/i, "")}
+                                </span>
                               </div>
-
-                              {isExpanded && (
-                                <div style={{ padding: "8px 10px 10px", borderTop: "1px solid #e2e8f0", background: "#f8fafc", fontSize: 11 }}>
-                                  <div style={{ marginBottom: 6 }}>
-                                    <div style={{ color: "#64748b", fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 2 }}>
-                                      Trigger Summary
-                                    </div>
-                                    <div style={{ color: "#0f172a", fontWeight: 600, lineHeight: 1.4 }}>
-                                      {cat.summary}
-                                    </div>
-                                  </div>
-
-                                  {cat.factors && cat.factors.length > 0 && (
-                                    <div style={{ display: "flex", flexDirection: "column", gap: 3, marginBottom: 6 }}>
-                                      {cat.factors.map((f: any, fIdx: number) => (
-                                        <div
-                                          key={fIdx}
-                                          style={{
-                                            fontSize: 10,
-                                            padding: "4px 6px",
-                                            borderRadius: 4,
-                                            background: f.triggered ? (f.severity === "HIGH" ? "#fef2f2" : "#fffbeb") : "#ffffff",
-                                            border: `1px solid ${f.triggered ? (f.severity === "HIGH" ? "#fecaca" : "#fde68a") : "#e2e8f0"}`,
-                                            color: f.triggered ? (f.severity === "HIGH" ? "#991b1b" : "#92400e") : "#475569",
-                                            display: "flex",
-                                            justifyContent: "space-between",
-                                            alignItems: "center",
-                                            gap: 4,
-                                          }}
-                                        >
-                                          <div>
-                                            <strong>{f.name}:</strong> {f.evidence}
-                                          </div>
-                                          {f.triggered && (
-                                            <span style={{ fontSize: 8, fontWeight: 800, padding: "1px 4px", borderRadius: 3, background: f.severity === "HIGH" ? "#dc2626" : "#d97706", color: "#fff", flexShrink: 0 }}>
-                                              {f.severity}
-                                            </span>
-                                          )}
-                                        </div>
-                                      ))}
-                                    </div>
-                                  )}
-
-                                  <div
-                                    style={{
-                                      background: "#ffffff",
-                                      border: "1px solid #cbd5e1",
-                                      borderRadius: 4,
-                                      padding: "5px 7px",
-                                      color: "#0f172a",
-                                      fontSize: 10,
-                                      lineHeight: 1.35,
-                                    }}
-                                  >
-                                    <strong style={{ color: "#0284c7" }}>Action: </strong>
-                                    {cat.action}
-                                  </div>
-                                </div>
-                              )}
+                              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                <span
+                                  style={{
+                                    fontSize: 10,
+                                    fontWeight: 800,
+                                    color: badgeColor,
+                                    letterSpacing: "0.04em",
+                                    minWidth: 46,
+                                    textAlign: "right",
+                                  }}
+                                >
+                                  {cat.level}
+                                </span>
+                              </div>
                             </div>
                           );
                         })}
+                      </div>
+
+                      {/* 3. "Why?" Section — Clean, focused cards for active risks */}
+                      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                        <div style={{ fontSize: 10, fontWeight: 800, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.06em", paddingLeft: 2 }}>
+                          {expandedRiskKey ? "Selected Factor Details" : "Active Risk Factors & Why"}
+                        </div>
+
+                        {/* If user clicked a specific category, show it. Otherwise show all HIGH & MEDIUM issues */}
+                        {(() => {
+                          const activeCats = (riskProfile?.categories || []).filter((cat: any) =>
+                            expandedRiskKey ? cat.key === expandedRiskKey : cat.level === "HIGH" || cat.level === "MEDIUM",
+                          );
+
+                          if (activeCats.length === 0) {
+                            return (
+                              <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 8, padding: "10px 12px" }}>
+                                <div style={{ fontSize: 11, fontWeight: 700, color: "#166534", display: "flex", alignItems: "center", gap: 6 }}>
+                                  <CheckCircle2 size={13} color="#166534" /> Clear Title — No Active Risk Flags
+                                </div>
+                                <div style={{ fontSize: 11, color: "#15803d", marginTop: 4, lineHeight: 1.4 }}>
+                                  Ownership, boundary survey, encumbrance, and land-use records are fully compliant.
+                                </div>
+                              </div>
+                            );
+                          }
+
+                          return activeCats.map((cat: any) => {
+                            const isHigh = cat.level === "HIGH";
+                            const borderColor = isHigh ? "#fca5a5" : "#fde68a";
+                            const bgColor = isHigh ? "#fef2f2" : "#fffbeb";
+                            const titleColor = isHigh ? "#b91c1c" : "#92400e";
+                            const dotEmoji = isHigh ? "🔴" : "🟠";
+
+                            return (
+                              <div
+                                key={cat.key}
+                                style={{
+                                  background: bgColor,
+                                  border: `1px solid ${borderColor}`,
+                                  borderRadius: 8,
+                                  padding: "10px 12px",
+                                  display: "flex",
+                                  flexDirection: "column",
+                                  gap: 6,
+                                }}
+                              >
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                  <div style={{ fontSize: 11, fontWeight: 800, color: titleColor }}>
+                                    {dotEmoji} {cat.name}
+                                  </div>
+                                  <span style={{ fontSize: 9, fontWeight: 800, background: isHigh ? "#dc2626" : "#d97706", color: "#fff", padding: "1px 5px", borderRadius: 3 }}>
+                                    {cat.level}
+                                  </span>
+                                </div>
+
+                                <div style={{ fontSize: 11, color: "#0f172a", lineHeight: 1.45, background: "#ffffff", padding: "6px 8px", borderRadius: 6, border: `1px solid ${borderColor}` }}>
+                                  <div>• <strong>Trigger:</strong> {cat.summary}</div>
+                                  {cat.factors && cat.factors.filter((f: any) => f.triggered).map((f: any, fIdx: number) => (
+                                    <div key={fIdx} style={{ color: titleColor, marginTop: 2 }}>
+                                      • <strong>{f.name}:</strong> {f.evidence}
+                                    </div>
+                                  ))}
+                                </div>
+
+                                <div style={{ fontSize: 10, color: "#334155", lineHeight: 1.35 }}>
+                                  <strong style={{ color: "#0284c7" }}>Action:</strong> {cat.action}
+                                </div>
+                              </div>
+                            );
+                          });
+                        })()}
                       </div>
                     </div>
                   )}

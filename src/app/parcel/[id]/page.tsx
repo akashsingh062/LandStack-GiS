@@ -396,66 +396,122 @@ export default function ParcelPage() {
                 <span className="badge badge-success" style={{ fontSize: 11 }}>🟢 {risk?.lowCount || 0} Low Risk Factors</span>
               </div>
 
-              {/* 12 Risk Categories Cards Grid */}
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "var(--space-md)" }}>
-                {(risk?.categories || []).map((cat: any) => {
-                  const catColor = cat.level === "HIGH" ? "var(--status-error)" : cat.level === "MEDIUM" ? "var(--status-warning)" : "var(--status-success)";
-                  const catBg = cat.level === "HIGH" ? "rgba(239, 68, 68, 0.08)" : cat.level === "MEDIUM" ? "rgba(245, 158, 11, 0.08)" : "rgba(16, 185, 129, 0.08)";
+              {/* 12 Risk Factors List & Why Breakdown */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "var(--space-lg)" }}>
+                {/* Clean Checklist Column */}
+                <div>
+                  <h4 style={{ fontSize: 13, fontWeight: 700, marginBottom: 10, color: "var(--text-primary)" }}>
+                    12-Factor Statutory Assessment
+                  </h4>
+                  <div
+                    style={{
+                      background: "var(--bg-app)",
+                      border: "1px solid var(--border-default)",
+                      borderRadius: "var(--radius-md)",
+                      overflow: "hidden",
+                    }}
+                  >
+                    {(risk?.categories || []).map((cat: any, idx: number) => {
+                      const dotEmoji = cat.level === "HIGH" ? "🔴" : cat.level === "MEDIUM" ? "🟠" : "🟢";
+                      const badgeColor = cat.level === "HIGH" ? "var(--status-error)" : cat.level === "MEDIUM" ? "var(--status-warning)" : "var(--status-success)";
+                      const isLast = idx === (risk?.categories || []).length - 1;
 
-                  return (
-                    <div
-                      key={cat.key}
-                      style={{
-                        background: "var(--bg-app)",
-                        border: `1px solid ${cat.level === "HIGH" ? "var(--status-error)" : "var(--border-default)"}`,
-                        borderRadius: "var(--radius-md)",
-                        padding: "var(--space-md)",
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: 10,
-                      }}
-                    >
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 700, fontSize: 14, color: "var(--text-primary)" }}>
-                          <span style={{ width: 10, height: 10, borderRadius: "50%", background: catColor, flexShrink: 0 }} />
-                          {cat.name}
+                      return (
+                        <div
+                          key={cat.key}
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            padding: "9px 14px",
+                            borderBottom: isLast ? "none" : "1px solid var(--border-default)",
+                          }}
+                        >
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <span style={{ fontSize: 12 }}>{dotEmoji}</span>
+                            <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>
+                              {cat.name.replace(/ Risk$/i, "")}
+                            </span>
+                          </div>
+                          <span style={{ fontSize: 11, fontWeight: 800, color: badgeColor }}>
+                            {cat.level}
+                          </span>
                         </div>
-                        <span className={`badge ${cat.level === "HIGH" ? "badge-error" : cat.level === "MEDIUM" ? "badge-warning" : "badge-success"}`} style={{ fontSize: 10 }}>
-                          {cat.level}
-                        </span>
-                      </div>
+                      );
+                    })}
+                  </div>
+                </div>
 
-                      <div style={{ fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.4 }}>
-                        <strong>Trigger Analysis:</strong> {cat.summary}
-                      </div>
+                {/* Active Issues & Why Column */}
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  <h4 style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)" }}>
+                    Detected Issues & Action Items
+                  </h4>
 
-                      {cat.factors && cat.factors.length > 0 && (
-                        <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-                          {cat.factors.map((f: any, fIdx: number) => (
-                            <div
-                              key={fIdx}
-                              style={{
-                                fontSize: 11,
-                                padding: "4px 8px",
-                                borderRadius: "var(--radius-sm)",
-                                background: f.triggered ? catBg : "var(--bg-card)",
-                                border: "1px solid var(--border-default)",
-                                color: f.triggered ? catColor : "var(--text-secondary)",
-                              }}
-                            >
-                              <strong>{f.name}:</strong> {f.evidence}
+                  {(() => {
+                    const activeCats = (risk?.categories || []).filter((cat: any) =>
+                      cat.level === "HIGH" || cat.level === "MEDIUM",
+                    );
+
+                    if (activeCats.length === 0) {
+                      return (
+                        <div className="card" style={{ background: "rgba(16, 185, 129, 0.08)", border: "1px solid var(--status-success)", padding: "var(--space-md)" }}>
+                          <div style={{ fontWeight: 700, color: "var(--status-success)", display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
+                            <CheckCircle2 size={16} /> All 12 Statutory Checks Clear
+                          </div>
+                          <div style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 6, lineHeight: 1.45 }}>
+                            Ownership, boundary survey, encumbrance, and land-use records are fully verified with zero active risk flags.
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    return activeCats.map((cat: any) => {
+                      const isHigh = cat.level === "HIGH";
+                      const catColor = isHigh ? "var(--status-error)" : "var(--status-warning)";
+                      const catBg = isHigh ? "rgba(239, 68, 68, 0.08)" : "rgba(245, 158, 11, 0.08)";
+                      const dotEmoji = isHigh ? "🔴" : "🟠";
+
+                      return (
+                        <div
+                          key={cat.key}
+                          style={{
+                            background: catBg,
+                            border: `1px solid ${catColor}`,
+                            borderRadius: "var(--radius-md)",
+                            padding: "var(--space-md)",
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: 6,
+                          }}
+                        >
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                            <div style={{ fontWeight: 700, fontSize: 13, color: catColor }}>
+                              {dotEmoji} {cat.name}
                             </div>
-                          ))}
-                        </div>
-                      )}
+                            <span className={`badge ${isHigh ? "badge-error" : "badge-warning"}`} style={{ fontSize: 10 }}>
+                              {cat.level}
+                            </span>
+                          </div>
 
-                      <div style={{ background: "var(--bg-card)", padding: "6px 10px", borderRadius: "var(--radius-sm)", border: "1px solid var(--border-default)", fontSize: 11 }}>
-                        <strong style={{ color: "var(--brand-primary)" }}>Action: </strong>
-                        {cat.action}
-                      </div>
-                    </div>
-                  );
-                })}
+                          <div style={{ fontSize: 12, color: "var(--text-primary)", background: "var(--bg-card)", padding: "8px 10px", borderRadius: "var(--radius-sm)", border: "1px solid var(--border-default)", lineHeight: 1.4 }}>
+                            <div>• <strong>Trigger:</strong> {cat.summary}</div>
+                            {cat.factors && cat.factors.filter((f: any) => f.triggered).map((f: any, fIdx: number) => (
+                              <div key={fIdx} style={{ color: catColor, marginTop: 3 }}>
+                                • <strong>{f.name}:</strong> {f.evidence}
+                              </div>
+                            ))}
+                          </div>
+
+                          <div style={{ fontSize: 11, color: "var(--text-secondary)", lineHeight: 1.35 }}>
+                            <strong style={{ color: "var(--brand-primary)" }}>Action: </strong>
+                            {cat.action}
+                          </div>
+                        </div>
+                      );
+                    });
+                  })()}
+                </div>
               </div>
             </div>
           </div>
