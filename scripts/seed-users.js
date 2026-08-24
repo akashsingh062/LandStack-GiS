@@ -1,6 +1,6 @@
 /**
  * LandStack — Database User Seeding & Schema Sync (SIH 2026 PS #26014)
- * Synchronizes audit.users table with staff accounts (password: sih@2026) and initial citizen accounts
+ * Synchronizes audit.users table with staff accounts (password: ) and initial citizen accounts
  */
 
 const { Pool } = require("pg");
@@ -11,7 +11,7 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false },
 });
 
-const DEFAULT_STAFF_PASSWORD = "sih@2026";
+const DEFAULT_STAFF_PASSWORD = "";
 
 const OFFICIALS = [
   {
@@ -128,25 +128,6 @@ const OFFICIALS = [
   },
 ];
 
-const INITIAL_CITIZENS = [
-  {
-    username: "citizen_ramesh",
-    official_id: "CITIZEN-001",
-    name: "Ramesh Kumar",
-    email: "ramesh.kumar@biharbhumi.bihar.gov.in",
-    phone: "+919876543210",
-    role: "CITIZEN",
-    user_type: "CITIZEN",
-    department: "Public Citizen Portal",
-    title: "Citizen / Land Owner",
-    jurisdiction: "Basopatti, Madhubani (Bihar)",
-    state_code: "BR",
-    district_code: "BR-10",
-    circle_code: "Basopatti",
-    village_code: "Arghawa (33)",
-    password_hash: "",
-  },
-];
 
 async function seedDatabase() {
   console.log("Connecting to Supabase Postgres database...");
@@ -168,7 +149,7 @@ async function seedDatabase() {
       CREATE INDEX IF NOT EXISTS users_official_id_idx ON audit.users (official_id);
     `);
 
-    console.log("Upserting official accounts into audit.users with common password 'sih@2026'...");
+    console.log("Upserting official accounts into audit.users with common password ''...");
     for (const off of OFFICIALS) {
       await client.query(
         `

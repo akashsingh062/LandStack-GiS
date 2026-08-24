@@ -5,7 +5,7 @@
 
 import { UserRole } from "./types";
 
-export const COMMON_STAFF_PASSWORD = "sih@2026";
+export const COMMON_STAFF_PASSWORD = "";
 
 export interface DepartmentOption {
   id: string;
@@ -22,7 +22,8 @@ export const DEPARTMENTS: DepartmentOption[] = [
     id: "revenue",
     name: "Revenue & Land Records",
     code: "REV",
-    description: "RoR Jamabandi, Land Records, Mutation Review, Ownership Verification",
+    description:
+      "RoR Jamabandi, Land Records, Mutation Review, Ownership Verification",
     defaultOfficerId: "REV-001",
     defaultOfficerName: "Vikram Singh (Circle Officer - Basopatti)",
     role: "REVENUE_OFFICER",
@@ -31,7 +32,8 @@ export const DEPARTMENTS: DepartmentOption[] = [
     id: "registration",
     name: "Registration & Stamps",
     code: "REG",
-    description: "Property Registration, Sale Deeds, Encumbrances (NEC), Mortgages",
+    description:
+      "Property Registration, Sale Deeds, Encumbrances (NEC), Mortgages",
     defaultOfficerId: "REG-001",
     defaultOfficerName: "Priya Sharma (Sub-Registrar - Madhubani)",
     role: "REGISTRATION_OFFICER",
@@ -49,7 +51,8 @@ export const DEPARTMENTS: DepartmentOption[] = [
     id: "municipality",
     name: "Municipal Property Tax",
     code: "TAX",
-    description: "Property Tax Assessment, Built-up GIS Footprints, Arrears Collection",
+    description:
+      "Property Tax Assessment, Built-up GIS Footprints, Arrears Collection",
     defaultOfficerId: "TAX-001",
     defaultOfficerName: "Sunita Rao (Executive Officer)",
     role: "TAX_OFFICER",
@@ -58,7 +61,8 @@ export const DEPARTMENTS: DepartmentOption[] = [
     id: "admin",
     name: "Revenue & Land Reforms Dept (State Admin)",
     code: "ADMIN",
-    description: "User Provisioning, State Adapters, System Integrations, Access Policies",
+    description:
+      "User Provisioning, State Adapters, System Integrations, Access Policies",
     defaultOfficerId: "ADMIN-001",
     defaultOfficerName: "Rajeshwar Jha (State Nodal IT Admin)",
     role: "ADMIN",
@@ -67,7 +71,8 @@ export const DEPARTMENTS: DepartmentOption[] = [
     id: "governance",
     name: "Apex State Land Governance Directorate",
     code: "SUPER",
-    description: "State-Wide Spatial KPIs, Multi-Dept Governance, Dispute Arbitration",
+    description:
+      "State-Wide Spatial KPIs, Multi-Dept Governance, Dispute Arbitration",
     defaultOfficerId: "SUPER-001",
     defaultOfficerName: "Dr. Sanjay Kumar, IAS (Principal Secretary)",
     role: "SUPER_ADMIN",

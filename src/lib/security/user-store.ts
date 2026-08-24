@@ -1,6 +1,6 @@
 /**
  * LandStack — Database User & Official Repository (SIH 2026 PS #26014)
- * Handles Citizen Sign-Up, Profile Storage, and Department Official Validation (Password: sih@2026)
+ * Handles Citizen Sign-Up, Profile Storage, and Department Official Validation (Password: )
  */
 
 import { Pool } from "pg";
@@ -23,7 +23,11 @@ function getPool(): Pool {
   return globalThis.landstackDbPool;
 }
 
-import { DEPARTMENTS, COMMON_STAFF_PASSWORD, DepartmentOption } from "./departments";
+import {
+  DEPARTMENTS,
+  COMMON_STAFF_PASSWORD,
+  DepartmentOption,
+} from "./departments";
 export { DEPARTMENTS, COMMON_STAFF_PASSWORD, type DepartmentOption };
 
 export interface DbUser {
@@ -55,7 +59,7 @@ export async function getUserByPhone(phone: string): Promise<DbUser | null> {
     const pool = getPool();
     const res = await pool.query(
       `SELECT * FROM audit.users WHERE phone = $1 OR phone = $2 LIMIT 1`,
-      [norm, phone]
+      [norm, phone],
     );
     if (res.rows.length > 0) {
       return res.rows[0];
@@ -69,7 +73,9 @@ export async function getUserByPhone(phone: string): Promise<DbUser | null> {
 /**
  * Look up official by official_id or email
  */
-export async function getOfficialByIdOrEmail(identifier: string): Promise<DbUser | null> {
+export async function getOfficialByIdOrEmail(
+  identifier: string,
+): Promise<DbUser | null> {
   const clean = identifier.trim().toLowerCase();
   try {
     const pool = getPool();
@@ -79,7 +85,7 @@ export async function getOfficialByIdOrEmail(identifier: string): Promise<DbUser
           OR LOWER(email) = $1 
           OR LOWER(username) = $1 
        LIMIT 1`,
-      [clean]
+      [clean],
     );
     if (res.rows.length > 0) {
       return res.rows[0];
@@ -104,7 +110,9 @@ export interface CitizenRegistrationInput {
 /**
  * Register or update citizen in database
  */
-export async function registerOrUpdateCitizen(input: CitizenRegistrationInput): Promise<DbUser> {
+export async function registerOrUpdateCitizen(
+  input: CitizenRegistrationInput,
+): Promise<DbUser> {
   const phone = normalizePhoneNumber(input.phone);
   const username = `citizen_${phone.replace(/\D/g, "").slice(-10)}`;
   const jurisdiction =
@@ -165,7 +173,7 @@ export async function registerOrUpdateCitizen(input: CitizenRegistrationInput): 
         citizenUser.district_code,
         citizenUser.circle_code,
         citizenUser.village_code,
-      ]
+      ],
     );
 
     if (res.rows.length > 0) {
@@ -179,7 +187,7 @@ export async function registerOrUpdateCitizen(input: CitizenRegistrationInput): 
 }
 
 /**
- * Validate staff login with department selection and common password sih@2026
+ * Validate staff login with department selection and common password
  */
 export async function validateStaffLogin(params: {
   department?: string;
@@ -189,17 +197,24 @@ export async function validateStaffLogin(params: {
   const { department, official_id, password } = params;
 
   if (!official_id) {
-    return { success: false, error: "Please enter your Official Employee ID or Government Email." };
+    return {
+      success: false,
+      error: "Please enter your Official Employee ID or Government Email.",
+    };
   }
 
-  // Check common password: sih@2026 (or bypass in dev if empty)
+  // Check common password:  (or bypass in dev if empty)
   const isPasswordValid =
     password === COMMON_STAFF_PASSWORD ||
     password === "••••••••" ||
-    (process.env.NODE_ENV !== "production" && (!password || password === "admin" || password === "password"));
+    (process.env.NODE_ENV !== "production" &&
+      (!password || password === "admin" || password === "password"));
 
   if (!isPasswordValid) {
-    return { success: false, error: "Invalid password. Department password is required." };
+    return {
+      success: false,
+      error: "Invalid password. Department password is required.",
+    };
   }
 
   const user = await getOfficialByIdOrEmail(official_id);
@@ -210,11 +225,13 @@ export async function validateStaffLogin(params: {
       (d) =>
         d.id === department ||
         d.name.toLowerCase() === department?.toLowerCase() ||
-        d.code.toLowerCase() === official_id.split("-")[0]?.toLowerCase()
+        d.code.toLowerCase() === official_id.split("-")[0]?.toLowerCase(),
     );
 
     if (deptMatch) {
-      const fallbackOfficial = await getOfficialByIdOrEmail(deptMatch.defaultOfficerId);
+      const fallbackOfficial = await getOfficialByIdOrEmail(
+        deptMatch.defaultOfficerId,
+      );
       if (fallbackOfficial) {
         return { success: true, user: fallbackOfficial };
       }
@@ -229,9 +246,15 @@ export async function validateStaffLogin(params: {
   // Verify department match if department was explicitly selected
   if (department && department !== "all") {
     const deptObj = DEPARTMENTS.find(
-      (d) => d.id === department || d.name.toLowerCase() === department.toLowerCase()
+      (d) =>
+        d.id === department ||
+        d.name.toLowerCase() === department.toLowerCase(),
     );
-    if (deptObj && user.department !== deptObj.name && !user.department.includes(deptObj.code)) {
+    if (
+      deptObj &&
+      user.department !== deptObj.name &&
+      !user.department.includes(deptObj.code)
+    ) {
       // Allow if Super Admin / State Nodal Admin
       if (user.role !== "SUPER_ADMIN" && user.role !== "ADMIN") {
         return {

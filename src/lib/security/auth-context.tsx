@@ -1,6 +1,11 @@
 "use client";
 
-import React, { createContext, useContext, useCallback, useSyncExternalStore } from "react";
+import React, {
+  createContext,
+  useContext,
+  useCallback,
+  useSyncExternalStore,
+} from "react";
 import { useRouter } from "next/navigation";
 import { UserRole, UserType, Permission } from "./types";
 import { ROLE_PERMISSIONS } from "./rbac-matrix";
@@ -10,7 +15,16 @@ import * as Lucide from "lucide-react";
 export { DEMO_PERSONAS, type UserPersona };
 
 export const getLucideIcon = (iconName: string) => {
-  const icon = (Lucide as unknown as Record<string, React.ComponentType<{ size?: number; className?: string; style?: React.CSSProperties }>>)[iconName];
+  const icon = (
+    Lucide as unknown as Record<
+      string,
+      React.ComponentType<{
+        size?: number;
+        className?: string;
+        style?: React.CSSProperties;
+      }>
+    >
+  )[iconName];
   return icon || Lucide.User;
 };
 
@@ -31,20 +45,32 @@ export interface AuthContextType {
   isMounted: boolean;
   loginAs: (roleOrId: string) => void;
   updateUserProfile: (updates: Partial<UserPersona>) => void;
-  signupCitizen: (payload: CitizenSignupPayload) => Promise<{ success: boolean; simulated_code?: string; error?: string }>;
+  signupCitizen: (
+    payload: CitizenSignupPayload,
+  ) => Promise<{ success: boolean; simulated_code?: string; error?: string }>;
   loginWithOtp: (
     phone: string,
     code: string,
-    extra?: { fullName?: string; email?: string; district_code?: string; circle_code?: string; village_code?: string }
+    extra?: {
+      fullName?: string;
+      email?: string;
+      district_code?: string;
+      circle_code?: string;
+      village_code?: string;
+    },
   ) => Promise<{ success: boolean; error?: string; redirect_url?: string }>;
   loginOfficial: (
     officialIdOrEmail: string,
     password?: string,
-    department?: string
+    department?: string,
   ) => Promise<{ success: boolean; error?: string; redirect_url?: string }>;
   logout: () => void;
   hasPermission: (permission: Permission) => boolean;
-  checkJurisdiction: (targetScope: { state_code?: string; district_code?: string; circle_code?: string }) => boolean;
+  checkJurisdiction: (targetScope: {
+    state_code?: string;
+    district_code?: string;
+    circle_code?: string;
+  }) => boolean;
   getInitials: (name?: string) => string;
 }
 
@@ -69,13 +95,18 @@ let cachedUserPersona: UserPersona | null = null;
 function getAuthSnapshot(): UserPersona | null {
   if (typeof window === "undefined") return null;
   try {
-    const raw = localStorage.getItem(AUTH_STORAGE_KEY) || localStorage.getItem("landstack_user");
+    const raw =
+      localStorage.getItem(AUTH_STORAGE_KEY) ||
+      localStorage.getItem("landstack_user");
     if (raw && raw !== cachedUserJson) {
       cachedUserJson = raw;
       const parsed = JSON.parse(raw);
       if (parsed && typeof parsed === "object") {
         const match = DEMO_PERSONAS.find(
-          (p) => p.id === parsed.id || p.officialId === parsed.officialId || p.role === parsed.role
+          (p) =>
+            p.id === parsed.id ||
+            p.officialId === parsed.officialId ||
+            p.role === parsed.role,
         );
         if (match) {
           cachedUserPersona = { ...match, ...parsed };
@@ -127,8 +158,16 @@ function getMountedServerSnapshot() {
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const currentUser = useSyncExternalStore(subscribeToAuth, getAuthSnapshot, getAuthServerSnapshot);
-  const isMounted = useSyncExternalStore(subscribeToMounted, getMountedSnapshot, getMountedServerSnapshot);
+  const currentUser = useSyncExternalStore(
+    subscribeToAuth,
+    getAuthSnapshot,
+    getAuthServerSnapshot,
+  );
+  const isMounted = useSyncExternalStore(
+    subscribeToMounted,
+    getMountedSnapshot,
+    getMountedServerSnapshot,
+  );
   const isAuthenticated = Boolean(currentUser);
 
   const saveUserSession = useCallback((userObj: UserPersona | null) => {
@@ -146,7 +185,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         cachedUserJson = "";
         cachedUserPersona = null;
       }
-      window.dispatchEvent(new CustomEvent(AUTH_EVENT_NAME, { detail: userObj }));
+      window.dispatchEvent(
+        new CustomEvent(AUTH_EVENT_NAME, { detail: userObj }),
+      );
     } catch (e) {
       console.warn("Auth save error:", e);
     }
@@ -154,17 +195,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const loginAs = useCallback(
     (roleOrId: string) => {
-      const match = DEMO_PERSONAS.find(
-        (p) =>
-          p.id === roleOrId ||
-          p.officialId?.toLowerCase() === roleOrId.toLowerCase() ||
-          p.role === roleOrId ||
-          p.email.toLowerCase() === roleOrId.toLowerCase()
-      ) || DEMO_PERSONAS[0];
+      const match =
+        DEMO_PERSONAS.find(
+          (p) =>
+            p.id === roleOrId ||
+            p.officialId?.toLowerCase() === roleOrId.toLowerCase() ||
+            p.role === roleOrId ||
+            p.email.toLowerCase() === roleOrId.toLowerCase(),
+        ) || DEMO_PERSONAS[0];
 
       saveUserSession(match);
     },
-    [saveUserSession]
+    [saveUserSession],
   );
 
   const signupCitizen = useCallback(async (payload: CitizenSignupPayload) => {
@@ -188,7 +230,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     async (
       phone: string,
       code: string,
-      extra?: { fullName?: string; email?: string; district_code?: string; circle_code?: string; village_code?: string }
+      extra?: {
+        fullName?: string;
+        email?: string;
+        district_code?: string;
+        circle_code?: string;
+        village_code?: string;
+      },
     ) => {
       try {
         const res = await fetch("/api/v1/auth/otp/verify", {
@@ -218,7 +266,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           title: "Citizen / Land Owner",
           department: "Public Citizen Portal",
           icon: "User",
-          jurisdiction: data.user?.jurisdiction || "Basopatti, Madhubani (Bihar)",
+          jurisdiction:
+            data.user?.jurisdiction || "Basopatti, Madhubani (Bihar)",
           stateCode: data.user?.stateCode || "BR",
           districtCode: data.user?.districtCode || "BR-10",
           circleCode: data.user?.circleCode || "Basopatti",
@@ -231,14 +280,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         saveUserSession(citizenSession);
         return { success: true, redirect_url: "/" };
       } catch {
-        return { success: false, error: "Network error during OTP verification" };
+        return {
+          success: false,
+          error: "Network error during OTP verification",
+        };
       }
     },
-    [saveUserSession]
+    [saveUserSession],
   );
 
   const loginOfficial = useCallback(
-    async (officialIdOrEmail: string, password?: string, department?: string) => {
+    async (
+      officialIdOrEmail: string,
+      password?: string,
+      department?: string,
+    ) => {
       try {
         const res = await fetch("/api/v1/auth/login", {
           method: "POST",
@@ -247,12 +303,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             department,
             official_id: officialIdOrEmail,
             email: officialIdOrEmail,
-            password: password || "sih@2026",
+            password: password || "",
           }),
         });
         const data = await res.json();
         if (!res.ok) {
-          return { success: false, error: data.error || "Official authentication failed" };
+          return {
+            success: false,
+            error: data.error || "Official authentication failed",
+          };
         }
 
         const officerSession: UserPersona = {
@@ -275,12 +334,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         };
 
         saveUserSession(officerSession);
-        return { success: true, redirect_url: data.redirect_url || officerSession.landingUrl };
+        return {
+          success: true,
+          redirect_url: data.redirect_url || officerSession.landingUrl,
+        };
       } catch {
         return { success: false, error: "Network error during official login" };
       }
     },
-    [saveUserSession]
+    [saveUserSession],
   );
 
   const router = useRouter();
@@ -302,26 +364,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           "VIEW_PUBLIC_GIS",
         ].includes(permission as string);
       }
-      const allowed = (ROLE_PERMISSIONS as Record<string, Permission[]>)[currentUser.role] || [];
+      const allowed =
+        (ROLE_PERMISSIONS as Record<string, Permission[]>)[currentUser.role] ||
+        [];
       return allowed.includes(permission);
     },
-    [currentUser]
+    [currentUser],
   );
 
   const checkJurisdiction = useCallback(
-    (targetScope: { state_code?: string; district_code?: string; circle_code?: string }): boolean => {
+    (targetScope: {
+      state_code?: string;
+      district_code?: string;
+      circle_code?: string;
+    }): boolean => {
       if (!currentUser) return true; // public search
-      if (currentUser.role === "ADMIN" || currentUser.role === "SUPER_ADMIN" || currentUser.stateCode === "ALL") {
+      if (
+        currentUser.role === "ADMIN" ||
+        currentUser.role === "SUPER_ADMIN" ||
+        currentUser.stateCode === "ALL"
+      ) {
         return true;
       }
-      if (targetScope.state_code && targetScope.state_code !== "*" && targetScope.state_code !== currentUser.stateCode) {
+      if (
+        targetScope.state_code &&
+        targetScope.state_code !== "*" &&
+        targetScope.state_code !== currentUser.stateCode
+      ) {
         return false;
       }
       if (
         targetScope.district_code &&
         targetScope.district_code !== "*" &&
         currentUser.districtCode !== "ALL" &&
-        targetScope.district_code.toLowerCase() !== currentUser.districtCode.toLowerCase()
+        targetScope.district_code.toLowerCase() !==
+          currentUser.districtCode.toLowerCase()
       ) {
         return false;
       }
@@ -330,13 +407,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         targetScope.circle_code &&
         targetScope.circle_code !== "*" &&
         currentUser.circleCode !== "ALL" &&
-        targetScope.circle_code.toLowerCase() !== currentUser.circleCode.toLowerCase()
+        targetScope.circle_code.toLowerCase() !==
+          currentUser.circleCode.toLowerCase()
       ) {
         return false;
       }
       return true;
     },
-    [currentUser]
+    [currentUser],
   );
 
   const getInitials = useCallback((name?: string): string => {
@@ -354,7 +432,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const updated: UserPersona = { ...currentUser, ...updates };
       saveUserSession(updated);
     },
-    [currentUser, saveUserSession]
+    [currentUser, saveUserSession],
   );
 
   return (

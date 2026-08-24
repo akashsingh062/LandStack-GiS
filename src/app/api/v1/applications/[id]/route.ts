@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
+import { getNextWorkflowTransition } from "@/lib/workflow/workflow-engine";
 
 export async function GET(
   request: NextRequest,
@@ -44,19 +45,16 @@ export async function PATCH(
   try {
     const body = await request.json();
     const { 
+      action,
       status, 
       current_step,
       officer_name = "Land Officer Vikram Singh", 
       role = "LAND_OFFICER",
-      department = "Revenue",
-      comments,
+      department = "Revenue Department",
+      comments = "",
       escalated,
       escalation_reason
     } = body;
-
-    if (!status && escalated === undefined && !current_step) {
-      return NextResponse.json({ error: "No update parameters provided" }, { status: 400 });
-    }
 
     const appRes = await query(
       `SELECT * FROM governance.service_requests WHERE application_no = $1 OR request_id::text = $1 LIMIT 1`,
@@ -68,34 +66,81 @@ export async function PATCH(
     }
 
     const application = appRes.rows[0];
-    const newStatus = status || application.status;
-    const newStep = current_step || application.current_step;
-    const isEscalated = escalated !== undefined ? escalated : application.escalated;
-    const escReason = escalation_reason || application.escalation_reason;
+
+    let newStatus = application.status;
+    let newStep = application.current_step;
+    let targetDepartment = application.department;
+    let actionText = "";
+
+    const determinedAction = action || (status === "APPROVED" ? "APPROVE" : status === "REJECTED" ? "REJECT" : status === "ACTION_REQUIRED" ? "REQUEST_INFO" : "UPDATE");
+
+    if (determinedAction === "APPROVE") {
+      const transition = getNextWorkflowTransition(
+        application.service_type,
+        application.current_step,
+        officer_name,
+        role,
+        department,
+        comments
+      );
+
+      newStatus = transition.nextStatus;
+      newStep = transition.nextStep;
+      targetDepartment = transition.nextDepartment;
+      actionText = transition.actionText;
+    } else if (determinedAction === "REJECT") {
+      newStatus = "REJECTED";
+      newStep = `Rejected by ${department}`;
+      actionText = comments 
+        ? `Application Rejected by ${officer_name} (${department}): "${comments}"`
+        : `Application Rejected by ${officer_name} (${department}) due to statutory non-compliance.`;
+    } else if (determinedAction === "REQUEST_INFO") {
+      newStatus = "ACTION_REQUIRED";
+      newStep = `Action Required - Additional Documentation Requested by ${department}`;
+      actionText = comments
+        ? `Additional Documents Requested by ${officer_name} (${department}): "${comments}"`
+        : `Additional Documents Requested by ${officer_name} (${department}).`;
+    } else if (determinedAction === "ESCALATE") {
+      newStatus = application.status;
+      newStep = `Escalated SLA - Under Review (${department})`;
+      actionText = `SLA Escalation initiated by ${officer_name} (${department}): "${comments || "Statutory turnaround exceeded"}"`;
+    } else {
+      newStatus = status || application.status;
+      newStep = current_step || application.current_step;
+      actionText = comments ? `Action [${newStatus}]: ${comments}` : `Application updated to ${newStatus}`;
+    }
+
+    const isEscalated = escalated !== undefined ? escalated : (determinedAction === "ESCALATE" ? true : application.escalated);
+    const escReason = escalation_reason || (determinedAction === "ESCALATE" ? comments : application.escalation_reason);
 
     const updateRes = await query(
       `UPDATE governance.service_requests
-       SET status = $1, current_step = $2, assigned_officer = $3, 
-           escalated = $4, escalation_reason = $5, updated_at = NOW()
-       WHERE application_no = $6
+       SET status = $1, current_step = $2, department = $3, assigned_officer = $4, 
+           escalated = $5, escalation_reason = $6, updated_at = NOW()
+       WHERE application_no = $7
        RETURNING *`,
-      [newStatus, newStep, officer_name, isEscalated, escReason, application.application_no]
+      [newStatus, newStep, targetDepartment, officer_name, isEscalated, escReason, application.application_no]
     );
 
-    const actionText = comments 
-      ? `Action [${newStatus}]: ${comments}` 
-      : `Application updated to ${newStatus} (${newStep})`;
-
     await query(
-      `INSERT INTO governance.application_history (application_no, status, action, performed_by, role, department, comments, created_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())`,
-      [application.application_no, newStatus, actionText, officer_name, role, department, comments || null]
+      `INSERT INTO governance.application_history (
+        application_no, status, action, performed_by, role, department, comments, created_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())`,
+      [
+        application.application_no,
+        newStatus,
+        actionText,
+        officer_name,
+        role,
+        department,
+        comments || null,
+      ]
     );
 
     return NextResponse.json({
       success: true,
       application: updateRes.rows[0],
-      message: `Application ${application.application_no} updated to ${newStatus}`,
+      message: `Application ${application.application_no} updated: ${actionText}`,
     });
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : String(error);

@@ -1,9 +1,3 @@
-/**
- * POST /api/v1/auth/login
- * Department Official Login (SIH 2026 PS #26014)
- * Validates Department selection, Official ID, and Common Staff Password (sih@2026) against Database
- */
-
 import { NextRequest, NextResponse } from "next/server";
 import { validateStaffLogin, DEPARTMENTS } from "@/lib/security/user-store";
 import { ROLE_PERMISSIONS } from "@/lib/security/rbac-matrix";
@@ -13,17 +7,23 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const department = body.department?.trim();
-    const officialId = (body.official_id || body.officialId || body.email || body.id || "").trim();
+    const officialId = (
+      body.official_id ||
+      body.officialId ||
+      body.email ||
+      body.id ||
+      ""
+    ).trim();
     const password = body.password?.trim();
 
     if (!officialId) {
       return NextResponse.json(
         { error: "Official Employee ID or Government Email is required." },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    // Validate with common staff password 'sih@2026' and database lookup
+    // Validate with common staff password '' and database lookup
     const result = await validateStaffLogin({
       department,
       official_id: officialId,
@@ -35,9 +35,9 @@ export async function POST(request: NextRequest) {
         {
           error:
             result.error ||
-            "Authentication failed. Please verify your Department, Official ID, and Password (sih@2026).",
+            "Authentication failed. Please verify your Department, Official ID, and Password ().",
         },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -49,9 +49,15 @@ export async function POST(request: NextRequest) {
     if (officer.role === "ADMIN") landingUrl = "/admin";
     else if (officer.role === "SUPER_ADMIN") landingUrl = "/admin/intelligence";
     else if (officer.role === "AUDITOR") landingUrl = "/admin/security";
-    else if (officer.department.includes("Registration")) landingUrl = "/officer?dept=Registration";
-    else if (officer.department.includes("Planning")) landingUrl = "/officer?dept=Planning";
-    else if (officer.department.includes("Tax") || officer.department.includes("Municipality")) landingUrl = "/officer?dept=Municipality";
+    else if (officer.department.includes("Registration"))
+      landingUrl = "/officer?dept=Registration";
+    else if (officer.department.includes("Planning"))
+      landingUrl = "/officer?dept=Planning";
+    else if (
+      officer.department.includes("Tax") ||
+      officer.department.includes("Municipality")
+    )
+      landingUrl = "/officer?dept=Municipality";
 
     const token = Buffer.from(
       JSON.stringify({
@@ -69,7 +75,7 @@ export async function POST(request: NextRequest) {
         permissions,
         iat: Date.now(),
         exp: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
-      })
+      }),
     ).toString("base64");
 
     const response = NextResponse.json({
@@ -102,7 +108,8 @@ export async function POST(request: NextRequest) {
 
     return response;
   } catch (error: unknown) {
-    const msg = error instanceof Error ? error.message : "Official authentication error";
+    const msg =
+      error instanceof Error ? error.message : "Official authentication error";
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
@@ -114,7 +121,7 @@ export async function POST(request: NextRequest) {
 export async function GET() {
   return NextResponse.json({
     departments: DEPARTMENTS,
-    staff_password_hint: "Default Hackathon Staff Password: sih@2026",
+    staff_password_hint: "Default Hackathon Staff Password: ",
     note: "Official accounts require Department selection and pre-provisioned Official ID.",
   });
 }

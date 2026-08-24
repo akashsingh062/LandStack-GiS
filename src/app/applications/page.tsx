@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import * as Lucide from "lucide-react";
 import { useAuth } from "@/lib/security/auth-context";
 import { useLanguage } from "@/lib/i18n/language-context";
+import { getWorkflowDefinition, getCurrentStageIndex } from "@/lib/workflow/workflow-engine";
 import apiClient from "@/lib/api-client";
 
 const STATUS_MAP: Record<string, { label: string; class: string }> = {
@@ -18,24 +19,29 @@ const STATUS_MAP: Record<string, { label: string; class: string }> = {
   REJECTED: { label: "Rejected", class: "badge-error" },
 };
 
-function getSteps(currentStatus: string) {
-  const allSteps = ["SUBMITTED", "DOCUMENT_VERIFICATION", "UNDER_REVIEW", "APPROVED", "COMPLETED"];
-  const stepLabels = ["Submitted", "Document Verification", "Under Review", "Approved & Certified"];
-  
+function getSteps(serviceType: string, currentStatus: string, currentStep?: string) {
+  const workflow = getWorkflowDefinition(serviceType);
+  const currentStageIdx = getCurrentStageIndex(workflow, currentStep);
+
   if (currentStatus === "REJECTED") {
-    return [
-      { label: "Submitted", status: "completed" },
-      { label: "Under Review", status: "completed" },
-      { label: "Rejected", status: "current" },
-    ];
+    const steps = workflow.stages.slice(0, currentStageIdx + 1).map((s, i) => ({
+      label: `${s.deptCode}: ${s.name}`,
+      status: i < currentStageIdx ? "completed" : "current",
+    }));
+    steps.push({ label: "Rejected", status: "current" });
+    return steps;
   }
 
-  const normalized = currentStatus === "COMPLETED" ? "APPROVED" : currentStatus;
-  const currentIndex = allSteps.indexOf(normalized);
-  return stepLabels.map((label, i) => {
-    if (i < currentIndex || (currentStatus === "APPROVED" && i <= 3)) return { label, status: "completed" };
-    if (i === currentIndex) return { label, status: "current" };
-    return { label, status: "pending" };
+  const isApproved = currentStatus === "APPROVED" || currentStatus === "COMPLETED";
+
+  return workflow.stages.map((stage, i) => {
+    if (isApproved || i < currentStageIdx) {
+      return { label: `${stage.deptCode}: ${stage.name}`, status: "completed" };
+    }
+    if (i === currentStageIdx) {
+      return { label: `${stage.deptCode}: ${stage.name}`, status: "current" };
+    }
+    return { label: `${stage.deptCode}: ${stage.name}`, status: "pending" };
   });
 }
 
@@ -239,7 +245,7 @@ export default function ApplicationsPage() {
             }}
           >
             {applications.map((a) => {
-              const steps = getSteps(a.status);
+              const steps = getSteps(a.service_type, a.status, a.current_step);
               const isSelected = selectedId === a.application_no;
               return (
                 <motion.div
@@ -263,7 +269,7 @@ export default function ApplicationsPage() {
                   </div>
                   <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>{a.service_type}</div>
                   <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>
-                    Parcel: {a.parcel_ulpin || "—"} • {a.department}
+                    Parcel: {a.parcel_ulpin || "—"} • <strong>{a.department}</strong>
                   </div>
                   <div style={{ fontSize: 11, color: "var(--text-tertiary)", marginTop: 4 }}>
                     Submitted: {new Date(a.created_at).toLocaleDateString()} • Priority: {a.priority}
@@ -309,13 +315,47 @@ export default function ApplicationsPage() {
                   <button className="btn btn-ghost" onClick={() => setSelectedId(null)}>✕</button>
                 </div>
 
+                {/* Multi-Department Statutory Journey Box */}
+                {(() => {
+                  const wf = getWorkflowDefinition(app.service_type);
+                  const curIdx = getCurrentStageIndex(wf, app.current_step);
+                  return (
+                    <div style={{ background: "var(--bg-elevated)", padding: 12, borderRadius: 8, border: "1px solid var(--border-default)", marginBottom: "var(--space-md)" }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8, color: "var(--brand-primary)" }}>
+                        🏛️ Multi-Department Workflow Journey ({wf.stages.length} Stages)
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                        {wf.stages.map((stg, i) => {
+                          const isDone = app.status === "APPROVED" || i < curIdx;
+                          const isCurrent = app.status !== "APPROVED" && app.status !== "REJECTED" && i === curIdx;
+                          return (
+                            <div key={stg.stage} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 11, padding: "4px 6px", borderRadius: 4, background: isCurrent ? "rgba(2, 132, 199, 0.08)" : "transparent" }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                <span style={{ width: 16, height: 16, borderRadius: "50%", background: isDone ? "var(--status-success)" : isCurrent ? "var(--brand-primary)" : "var(--border-strong)", color: "#fff", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 700 }}>
+                                  {isDone ? "✓" : stg.stage}
+                                </span>
+                                <span style={{ fontWeight: isCurrent ? 700 : 500, color: isCurrent ? "var(--text-primary)" : "var(--text-secondary)" }}>
+                                  Stage {stg.stage}: {stg.department}
+                                </span>
+                              </div>
+                              <span className={`badge ${isDone ? "badge-success" : isCurrent ? "badge-warning" : "badge-neutral"}`} style={{ fontSize: 9, padding: "2px 6px" }}>
+                                {isDone ? "Cleared" : isCurrent ? "Active Verification" : "Pending"}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })()}
+
                 <div style={{ marginBottom: "var(--space-lg)" }}>
                   {[
                     ["Parcel ULPIN", app.parcel_ulpin || "—"],
                     ["Applicant Name", app.applicant_name],
                     ["Contact Phone", app.applicant_phone || "—"],
-                    ["Routing Department", app.department],
-                    ["Reviewing Officer", app.assigned_officer || "Circle / Sub-Registrar Desk"],
+                    ["Active Reviewing Desk", app.department],
+                    ["Assigned Officer", app.assigned_officer || "Pending Stage Assignment"],
                     ["Purpose", app.purpose || "—"],
                     ["Submitted On", new Date(app.created_at).toLocaleString()],
                     ["Last Updated", new Date(app.updated_at).toLocaleString()],

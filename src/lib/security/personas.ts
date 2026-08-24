@@ -38,10 +38,11 @@ export const DEMO_PERSONAS: UserPersona[] = [
     stateCode: "BR",
     districtCode: "BR-10",
     circleCode: "Basopatti",
-    description: "Owns survey parcels in Mauza Arghawa (33). Can view own Jamabandi RoR, track mutations, apply for citizen services.",
+    description:
+      "Owns survey parcels in Mauza Arghawa (33). Can view own Jamabandi RoR, track mutations, apply for citizen services.",
     landingUrl: "/",
     email: "citizen@biharbhumi.bihar.gov.in",
-    phone: "+91 98765 43210"
+    phone: "",
   },
   {
     id: "OFFICER_CO_VIKRAM",
@@ -56,10 +57,11 @@ export const DEMO_PERSONAS: UserPersona[] = [
     stateCode: "BR",
     districtCode: "BR-10",
     circleCode: "Basopatti",
-    description: "Statutory jurisdiction over Mauza Arghawa (33). Inspects Jamabandi RoR, verifies ownership, reviews mutations, resolves boundary disputes.",
+    description:
+      "Statutory jurisdiction over Mauza Arghawa (33). Inspects Jamabandi RoR, verifies ownership, reviews mutations, resolves boundary disputes.",
     landingUrl: "/officer",
     email: "co.basopatti@bihar.gov.in",
-    phone: "+91 94310 11111"
+    phone: "+91 94310 11111",
   },
   {
     id: "OFFICER_REG_PRIYA",
@@ -74,10 +76,11 @@ export const DEMO_PERSONAS: UserPersona[] = [
     stateCode: "BR",
     districtCode: "BR-10",
     circleCode: "ALL",
-    description: "Registers sale deeds, evaluates encumbrance certificates (NEC), logs stamp duty transactions, and records mortgages.",
+    description:
+      "Registers sale deeds, evaluates encumbrance certificates (NEC), logs stamp duty transactions, and records mortgages.",
     landingUrl: "/officer?dept=Registration",
     email: "subreg.madhubani@bihar.gov.in",
-    phone: "+91 94310 33333"
+    phone: "+91 94310 33333",
   },
   {
     id: "OFFICER_PLAN_ANAND",
@@ -92,10 +95,11 @@ export const DEMO_PERSONAS: UserPersona[] = [
     stateCode: "BR",
     districtCode: "BR-10",
     circleCode: "ALL",
-    description: "Enforces Master Plan 2035 zoning regulations, evaluates FAR & building setbacks, and reviews AI satellite change alerts.",
+    description:
+      "Enforces Master Plan 2035 zoning regulations, evaluates FAR & building setbacks, and reviews AI satellite change alerts.",
     landingUrl: "/officer?dept=Planning",
     email: "tpo.madhubani@bihar.gov.in",
-    phone: "+91 94310 44444"
+    phone: "+91 94310 44444",
   },
   {
     id: "ADMIN_STATE_RAJESHWAR",
@@ -110,10 +114,11 @@ export const DEMO_PERSONAS: UserPersona[] = [
     stateCode: "BR",
     districtCode: "ALL",
     circleCode: "ALL",
-    description: "Configures heterogeneous State Adapters, oversees security policies and ABAC rules, and manages system integrations.",
+    description:
+      "Configures heterogeneous State Adapters, oversees security policies and ABAC rules, and manages system integrations.",
     landingUrl: "/admin",
     email: "nodal.landstack@bihar.gov.in",
-    phone: "+91 94310 00000"
+    phone: "+91 94310 00000",
   },
   {
     id: "SUPER_ADMIN_SANJAY",
@@ -128,10 +133,11 @@ export const DEMO_PERSONAS: UserPersona[] = [
     stateCode: "BR",
     districtCode: "ALL",
     circleCode: "ALL",
-    description: "Cross-department governance, state-wide spatial KPIs, inter-departmental conflict arbitration, and strategic policy oversight.",
+    description:
+      "Cross-department governance, state-wide spatial KPIs, inter-departmental conflict arbitration, and strategic policy oversight.",
     landingUrl: "/admin/intelligence",
     email: "sec.revenue@bihar.gov.in",
-    phone: "+91 94310 99999"
+    phone: "+91 94310 99999",
   },
   {
     id: "OFFICER_TAX_SUNITA",
@@ -146,10 +152,11 @@ export const DEMO_PERSONAS: UserPersona[] = [
     stateCode: "BR",
     districtCode: "BR-10",
     circleCode: "Basopatti",
-    description: "Manages property tax assessments, GIS built-up footprint evaluations, demand notices, and revenue collection.",
+    description:
+      "Manages property tax assessments, GIS built-up footprint evaluations, demand notices, and revenue collection.",
     landingUrl: "/officer?dept=Municipality",
     email: "eo.basopatti@bihar.gov.in",
-    phone: "+91 94310 55555"
+    phone: "+91 94310 55555",
   },
   {
     id: "AUDITOR_CAG_MEENAKSHI",
@@ -164,9 +171,10 @@ export const DEMO_PERSONAS: UserPersona[] = [
     stateCode: "ALL",
     districtCode: "ALL",
     circleCode: "ALL",
-    description: "Inspects immutable tamper-evident SHA-256 audit logs, tracks DPDPA 2023 consent records, and audits officer actions.",
+    description:
+      "Inspects immutable tamper-evident SHA-256 audit logs, tracks DPDPA 2023 consent records, and audits officer actions.",
     landingUrl: "/admin/security",
     email: "auditor.vigilance@cag.gov.in",
-    phone: "+91 94310 22222"
-  }
+    phone: "+91 94310 22222",
+  },
 ];
