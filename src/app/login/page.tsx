@@ -20,7 +20,7 @@ export default function LoginPage() {
   const [citizenMode, setCitizenMode] = useState<"LOGIN" | "SIGNUP">("LOGIN");
 
   // Citizen States
-  const [phone, setPhone] = useState("9876543210");
+  const [phone, setPhone] = useState("");
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [stateCode, setStateCode] = useState("BR");

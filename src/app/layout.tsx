@@ -11,7 +11,7 @@ import { RouteGuard } from "@/components/RouteGuard";
 import "./globals.css";
 
 import { useState } from "react";
-import { Menu, X, Home, Map as MapIcon, Search, Landmark, Layers } from "lucide-react";
+import { Menu, X, Home, Map as MapIcon, Search, Landmark, Layers, LogOut } from "lucide-react";
 
 function getLocalizedNavLabel(label: string, t: (k: string) => string): string {
   const norm = (label || "").toLowerCase();
@@ -41,10 +41,11 @@ function getLocalizedSectionLabel(label: string, t: (k: string) => string): stri
 
 function Sidebar({ isOpen, onClose, isOverlay }: { isOpen: boolean; onClose: () => void; isOverlay?: boolean }) {
   const pathname = usePathname();
-  const { currentUser, getInitials, isMounted } = useAuth();
+  const { currentUser, getInitials, isMounted, logout } = useAuth();
   const { t } = useLanguage();
-  const activeUser = isMounted ? currentUser : DEMO_PERSONAS[0];
-  const navSections = getFilteredNavSections(activeUser.role);
+  const activeUser = isMounted ? currentUser : null;
+  const role = activeUser?.role || "CITIZEN";
+  const navSections = getFilteredNavSections(role);
 
   return (
     <>
@@ -107,32 +108,79 @@ function Sidebar({ isOpen, onClose, isOverlay }: { isOpen: boolean; onClose: () 
           {/* Pan-India Language Selector */}
           <LanguageSelector variant="sidebar" />
 
-          {/* User Persona Switcher */}
-          <Link href="/login" onClick={onClose} style={{ textDecoration: "none", color: "inherit", display: "block" }}>
-            <div
-              className="sidebar-user"
+          {/* User Auth Card or Login CTA */}
+          {activeUser ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <div
+                className="sidebar-user"
+                style={{
+                  background: "var(--bg-input)",
+                  border: "1px solid var(--border-default)",
+                  borderRadius: "var(--radius-md)",
+                  padding: "10px",
+                }}
+              >
+                <div className="sidebar-avatar" style={{ background: "var(--brand-primary)", color: "#fff", fontWeight: 700 }}>
+                  {getInitials(activeUser.name)}
+                </div>
+                <div className="sidebar-user-info" style={{ overflow: "hidden" }}>
+                  <div className="sidebar-user-name" style={{ fontWeight: 700 }}>
+                    {activeUser.name}
+                  </div>
+                  <div className="sidebar-user-role" style={{ fontSize: 11, color: "var(--text-accent)", whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}>
+                    {activeUser.title?.split("/")[0].trim() || activeUser.role}
+                  </div>
+                </div>
+              </div>
+
+              <button
+                onClick={() => {
+                  onClose();
+                  logout();
+                }}
+                style={{
+                  width: "100%",
+                  padding: "8px 12px",
+                  background: "rgba(239, 68, 68, 0.08)",
+                  border: "1px solid rgba(239, 68, 68, 0.2)",
+                  borderRadius: "var(--radius-md)",
+                  color: "#ef4444",
+                  fontSize: 12,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 6,
+                  transition: "background 0.15s ease",
+                }}
+              >
+                <LogOut size={14} />
+                <span>Logout Session</span>
+              </button>
+            </div>
+          ) : (
+            <Link
+              href="/login"
+              onClick={onClose}
               style={{
-                cursor: "pointer",
-                transition: "background 0.2s",
-                background: "var(--bg-input)",
-                border: "1px solid var(--border-default)",
+                textDecoration: "none",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
+                background: "var(--brand-primary)",
+                color: "#ffffff",
+                padding: "10px 14px",
                 borderRadius: "var(--radius-md)",
-                padding: "10px",
+                fontWeight: 700,
+                fontSize: 13,
+                boxShadow: "0 2px 6px rgba(2, 132, 199, 0.25)",
               }}
             >
-              <div className="sidebar-avatar" style={{ background: "var(--brand-primary)", color: "#fff", fontWeight: 700 }}>
-                {getInitials(activeUser.name)}
-              </div>
-              <div className="sidebar-user-info" style={{ overflow: "hidden" }}>
-                <div className="sidebar-user-name" style={{ display: "flex", alignItems: "center", gap: 6, fontWeight: 700 }}>
-                  <span>{activeUser.name}</span>
-                </div>
-                <div className="sidebar-user-role" style={{ fontSize: 11, color: "var(--text-accent)", whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}>
-                  {activeUser.title.split("/")[0].trim()} • Switch ⇄
-                </div>
-              </div>
-            </div>
-          </Link>
+              <span>🔑 Login / Sign Up</span>
+            </Link>
+          )}
         </div>
       </aside>
     </>
@@ -140,8 +188,8 @@ function Sidebar({ isOpen, onClose, isOverlay }: { isOpen: boolean; onClose: () 
 }
 
 function MobileHeader({ onToggleMenu, isOpen }: { onToggleMenu: () => void; isOpen: boolean }) {
-  const { currentUser, isMounted } = useAuth();
-  const activeUser = isMounted ? currentUser : DEMO_PERSONAS[0];
+  const { currentUser, isMounted, logout } = useAuth();
+  const activeUser = isMounted ? currentUser : null;
 
   return (
     <header className="mobile-header">
@@ -170,12 +218,33 @@ function MobileHeader({ onToggleMenu, isOpen }: { onToggleMenu: () => void; isOp
 
       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
         <LanguageSelector variant="pill" />
-        <Link href="/login" style={{ textDecoration: "none" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, background: "var(--bg-input)", border: "1px solid var(--border-default)", borderRadius: 20, padding: "4px 8px", fontSize: 11, fontWeight: 600, color: "var(--text-primary)" }}>
-            <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#10b981" }} />
-            <span>{activeUser.title.split(" ")[0]}</span>
-          </div>
-        </Link>
+        {activeUser ? (
+          <button
+            onClick={() => logout()}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              background: "rgba(239, 68, 68, 0.08)",
+              border: "1px solid rgba(239, 68, 68, 0.2)",
+              borderRadius: 20,
+              padding: "4px 10px",
+              fontSize: 11,
+              fontWeight: 700,
+              color: "#ef4444",
+              cursor: "pointer",
+            }}
+          >
+            <LogOut size={12} />
+            <span>Logout</span>
+          </button>
+        ) : (
+          <Link href="/login" style={{ textDecoration: "none" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, background: "var(--brand-primary)", color: "#fff", borderRadius: 20, padding: "4px 10px", fontSize: 11, fontWeight: 700 }}>
+              <span>Login</span>
+            </div>
+          </Link>
+        )}
       </div>
     </header>
   );
@@ -185,7 +254,7 @@ function MobileBottomNav({ onToggleMenu }: { onToggleMenu: () => void }) {
   const pathname = usePathname();
   const { currentUser, isMounted } = useAuth();
   const { t } = useLanguage();
-  const role = isMounted ? currentUser.role : "CITIZEN";
+  const role = isMounted && currentUser ? currentUser.role : "CITIZEN";
   const servicesHref = role === "CITIZEN" ? "/services" : "/officer";
   const servicesLabel = role === "CITIZEN" ? t("nav.services") : t("nav.officer_desk");
 

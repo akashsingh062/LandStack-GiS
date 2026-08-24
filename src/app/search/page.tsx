@@ -95,7 +95,7 @@ function SearchContent() {
     }
   };
 
-  const isOfficer = currentUser.role !== "CITIZEN";
+  const isOfficer = Boolean(currentUser && currentUser.role !== "CITIZEN");
 
   return (
     <div className="app-content animate-in">
@@ -112,7 +112,9 @@ function SearchContent() {
 
         {/* Role-Based Data Projection Indicator */}
         <div style={{ display: "flex", alignItems: "center", gap: 8, background: "var(--bg-card)", border: "1px solid var(--border-color)", padding: "6px 14px", borderRadius: "var(--radius-md)" }}>
-          <span style={{ display: "flex", alignItems: "center" }}>{React.createElement(getLucideIcon(currentUser.icon), { size: 16 })}</span>
+          <span style={{ display: "flex", alignItems: "center" }}>
+            {currentUser ? React.createElement(getLucideIcon(currentUser.icon), { size: 16 }) : <Lucide.User size={16} />}
+          </span>
           <div style={{ textAlign: "left" }}>
             <div style={{ fontSize: 11, fontWeight: 700, color: "#f8fafc" }}>
               {isOfficer ? "In-Jurisdiction Officer View" : "Public Citizen View"}
@@ -151,7 +153,7 @@ function SearchContent() {
               {results.length} record{results.length !== 1 ? "s" : ""} found for &ldquo;{query}&rdquo;
             </span>
             <span style={{ fontSize: 11, color: "var(--text-tertiary)" }}>
-              Projection: <strong>{currentUser.role}</strong> ({currentUser.jurisdiction})
+              Projection: <strong>{currentUser ? currentUser.role : "PUBLIC"}</strong> {currentUser ? `(${currentUser.jurisdiction})` : ""}
             </span>
           </div>
 

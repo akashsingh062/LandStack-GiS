@@ -6,16 +6,17 @@ import Link from "next/link";
 import { useAuth } from "@/lib/security/auth-context";
 import { checkRouteAccess } from "@/lib/security/route-guard";
 import apiClient from "@/lib/api-client";
-import { ShieldAlert } from "lucide-react";
+import { ShieldAlert, Lock } from "lucide-react";
 
 export function RouteGuard({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { currentUser, isMounted } = useAuth();
-  const accessState = checkRouteAccess(pathname, currentUser.role);
+  const currentRole = currentUser?.role || "CITIZEN";
+  const accessState = checkRouteAccess(pathname, currentRole);
 
   useEffect(() => {
     // Log security event for audit trail when access is denied
-    if (isMounted && !accessState.allowed) {
+    if (isMounted && !accessState.allowed && currentUser) {
       apiClient.post("/api/v1/security/policy-check", {
         principal: {
           user_id: currentUser.id,
@@ -67,69 +68,73 @@ export function RouteGuard({ children }: { children: React.ReactNode }) {
               boxShadow: "0 0 24px rgba(239, 68, 68, 0.2)",
             }}
           >
-            <ShieldAlert size={30} color="#ef4444" />
+            {currentUser ? <ShieldAlert size={30} color="#ef4444" /> : <Lock size={30} color="#ef4444" />}
           </div>
 
           <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
             <span className="badge badge-error" style={{ fontSize: 11, padding: "4px 8px" }}>
-              403 FORBIDDEN • RBAC ACCESS DENIED
+              {currentUser ? "403 FORBIDDEN • RBAC ACCESS DENIED" : "401 UNAUTHORIZED • LOGIN REQUIRED"}
             </span>
           </div>
 
           <h1 style={{ fontSize: 22, fontWeight: 900, color: "var(--text-primary)", margin: "8px 0" }}>
-            Restricted Statutory Route
+            {currentUser ? "Restricted Statutory Route" : "Authentication Required"}
           </h1>
 
           <p style={{ fontSize: 13, color: "var(--text-secondary)", maxWidth: 580, margin: "0 auto 20px", lineHeight: 1.6 }}>
-            You do not have the required authorization or jurisdictional clearance to access 
+            {currentUser
+              ? `You do not have the required authorization or jurisdictional clearance to access `
+              : `Please log in with an authorized Citizen or Department Official account to access `}
             <strong style={{ color: "var(--text-primary)", fontFamily: "monospace", margin: "0 4px", background: "var(--bg-input)", padding: "2px 6px", borderRadius: 4, wordBreak: "break-all" }}>{pathname}</strong>.
           </p>
 
           {/* Security Audit Details Box */}
-          <div
-            style={{
-              background: "var(--bg-input)",
-              border: "1px solid var(--border-default)",
-              borderRadius: "var(--radius-md)",
-              padding: "14px 16px",
-              maxWidth: 620,
-              margin: "0 auto 20px",
-              textAlign: "left",
-              fontSize: 12,
-            }}
-          >
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 6, marginBottom: 6 }}>
-              <span style={{ color: "var(--text-tertiary)" }}>Current Active Role:</span>
-              <strong style={{ color: "var(--text-primary)" }}>
-                {currentUser.role} ({currentUser.name})
-              </strong>
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 6, marginBottom: 6 }}>
-              <span style={{ color: "var(--text-tertiary)" }}>Assigned Jurisdiction:</span>
-              <span style={{ color: "var(--text-primary)" }}>{currentUser.jurisdiction}</span>
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 6, marginBottom: 6 }}>
-              <span style={{ color: "var(--text-tertiary)" }}>Authorized Roles:</span>
-              <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-                {accessState.requiredRoles.map((r) => (
-                  <span key={r} className="badge badge-neutral" style={{ fontSize: 10 }}>
-                    {r}
-                  </span>
-                ))}
+          {currentUser && (
+            <div
+              style={{
+                background: "var(--bg-input)",
+                border: "1px solid var(--border-default)",
+                borderRadius: "var(--radius-md)",
+                padding: "14px 16px",
+                maxWidth: 620,
+                margin: "0 auto 20px",
+                textAlign: "left",
+                fontSize: 12,
+              }}
+            >
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 6, marginBottom: 6 }}>
+                <span style={{ color: "var(--text-tertiary)" }}>Current Active Role:</span>
+                <strong style={{ color: "var(--text-primary)" }}>
+                  {currentUser.role} ({currentUser.name})
+                </strong>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 6, marginBottom: 6 }}>
+                <span style={{ color: "var(--text-tertiary)" }}>Assigned Jurisdiction:</span>
+                <span style={{ color: "var(--text-primary)" }}>{currentUser.jurisdiction}</span>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 6, marginBottom: 6 }}>
+                <span style={{ color: "var(--text-tertiary)" }}>Authorized Roles:</span>
+                <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                  {accessState.requiredRoles.map((r) => (
+                    <span key={r} className="badge badge-neutral" style={{ fontSize: 10 }}>
+                      {r}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 6 }}>
+                <span style={{ color: "var(--text-tertiary)" }}>Audit Trail:</span>
+                <span style={{ color: "#059669", fontFamily: "monospace", fontSize: 11 }}>
+                  ● Logged to SHA-256 Tamper-Evident Security Log
+                </span>
               </div>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 6 }}>
-              <span style={{ color: "var(--text-tertiary)" }}>Audit Trail:</span>
-              <span style={{ color: "#059669", fontFamily: "monospace", fontSize: 11 }}>
-                ● Logged to SHA-256 Tamper-Evident Security Log
-              </span>
-            </div>
-          </div>
+          )}
 
           {/* Action CTAs */}
           <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
             <Link href="/login" className="btn btn-primary" style={{ padding: "10px 16px", fontSize: 12, fontWeight: 700, flex: "1 1 180px", justifyContent: "center" }}>
-              <span>⇄</span> Switch to Authorized Persona
+              <span>🔑</span> {currentUser ? "Switch Account" : "Log In to LandStack"}
             </Link>
             <Link href="/" className="btn btn-outline" style={{ padding: "10px 16px", fontSize: 12, flex: "1 1 140px", justifyContent: "center" }}>
               Dashboard →

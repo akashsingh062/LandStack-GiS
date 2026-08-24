@@ -47,7 +47,7 @@ interface StatsData {
 
 export default function Dashboard() {
   const router = useRouter();
-  const { currentUser } = useAuth();
+  const { currentUser, logout } = useAuth();
   const { t } = useLanguage();
   const [stats, setStats] = useState<StatsData | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -77,7 +77,7 @@ export default function Dashboard() {
     [searchQuery, router]
   );
 
-  const role = currentUser.role;
+  const role = currentUser?.role || "CITIZEN";
 
   return (
     <div className="app-content animate-in">
@@ -112,38 +112,60 @@ export default function Dashboard() {
               flexShrink: 0,
             }}
           >
-            {React.createElement(getPersonaIcon(currentUser.icon), { size: 24, color: "#ffffff" })}
+            {currentUser ? (
+              React.createElement(getPersonaIcon(currentUser.icon), { size: 24, color: "#ffffff" })
+            ) : (
+              <Lucide.Building2 size={24} color="#ffffff" />
+            )}
           </div>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
               <h1 style={{ fontSize: 20, fontWeight: 800, color: "var(--text-primary)", margin: 0 }}>
-                Welcome, {currentUser.name}
+                {currentUser ? `Welcome, ${currentUser.name}` : "Welcome to LandStack DPI"}
               </h1>
               <span className="badge badge-info" style={{ fontSize: 11 }}>
-                {currentUser.role}
+                {currentUser ? currentUser.role : "PUBLIC ACCESS"}
               </span>
             </div>
             <p style={{ fontSize: 12, color: "var(--text-accent)", marginTop: 2, margin: 0 }}>
-              {currentUser.title} • {currentUser.jurisdiction}
+              {currentUser
+                ? `${currentUser.title} • ${currentUser.jurisdiction}`
+                : "Digital Public Infrastructure for Land Governance • Search parcels & GIS layers"}
             </p>
           </div>
         </div>
 
         <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", width: "100%", maxWidth: 360 }}>
-          <Link href="/login" className="btn btn-secondary" style={{ fontSize: 12, display: "flex", alignItems: "center", gap: 6, flex: "1 1 120px", justifyContent: "center" }}>
-            <Lucide.Repeat size={14} /> {t("nav.switch_role")}
-          </Link>
-          {role === "CITIZEN" ? (
-            <Link href="/services" className="btn btn-primary" style={{ fontSize: 12, flex: "1 1 120px", justifyContent: "center" }}>
-              <Lucide.Plus size={14} /> {t("action.apply")}
-            </Link>
-          ) : role === "ADMIN" || role === "AUDITOR" ? (
-            <Link href="/admin/security" className="btn btn-primary" style={{ fontSize: 12, flex: "1 1 120px", justifyContent: "center" }}>
-              <Lucide.Shield size={14} /> {t("nav.security")}
-            </Link>
+          {currentUser ? (
+            <>
+              <button
+                onClick={() => logout()}
+                className="btn btn-secondary"
+                style={{ fontSize: 12, display: "flex", alignItems: "center", gap: 6, flex: "1 1 120px", justifyContent: "center", color: "#ef4444" }}
+              >
+                <Lucide.LogOut size={14} /> Logout
+              </button>
+              {role === "CITIZEN" ? (
+                <Link href="/services" className="btn btn-primary" style={{ fontSize: 12, flex: "1 1 120px", justifyContent: "center" }}>
+                  <Lucide.Plus size={14} /> {t("action.apply")}
+                </Link>
+              ) : role === "ADMIN" || role === "AUDITOR" ? (
+                <Link href="/admin" className="btn btn-primary" style={{ fontSize: 12, flex: "1 1 120px", justifyContent: "center" }}>
+                  <Lucide.ShieldCheck size={14} /> {t("nav.admin_portal")}
+                </Link>
+              ) : (
+                <Link href="/officer" className="btn btn-primary" style={{ fontSize: 12, flex: "1 1 120px", justifyContent: "center" }}>
+                  <Lucide.Briefcase size={14} /> {t("nav.officer_desk")}
+                </Link>
+              )}
+            </>
           ) : (
-            <Link href="/officer" className="btn btn-primary" style={{ fontSize: 12, flex: "1 1 120px", justifyContent: "center" }}>
-              <Lucide.Briefcase size={14} /> {t("nav.officer_desk")}
+            <Link
+              href="/login"
+              className="btn btn-primary"
+              style={{ fontSize: 13, fontWeight: 700, flex: "1 1 180px", justifyContent: "center", display: "flex", alignItems: "center", gap: 6 }}
+            >
+              <span>🔑 Login / Sign Up</span>
             </Link>
           )}
         </div>

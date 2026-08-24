@@ -40,17 +40,17 @@ const STATUS_MAP: Record<string, { label: string; class: string }> = {
 };
 
 export default function OfficerPortal() {
-  const { currentUser } = useAuth();
+  const { currentUser, logout } = useAuth();
   const { t } = useLanguage();
   const [applications, setApplications] = useState<any[]>([]);
   const [selectedAppNo, setSelectedAppNo] = useState<string | null>(null);
   const [selectedDetail, setSelectedDetail] = useState<any | null>(null);
   const [parcel360, setParcel360] = useState<any | null>(null);
   const [selectedDept, setSelectedDept] = useState(() => {
-    if (currentUser.role === "REGISTRATION_OFFICER") return "Registration";
-    if (currentUser.role === "PLANNING_OFFICER") return "Planning";
-    if (currentUser.role === "TAX_OFFICER") return "Municipality";
-    if (currentUser.role === "REVENUE_OFFICER") return "Revenue";
+    if (currentUser?.role === "REGISTRATION_OFFICER") return "Registration";
+    if (currentUser?.role === "PLANNING_OFFICER") return "Planning";
+    if (currentUser?.role === "TAX_OFFICER") return "Municipality";
+    if (currentUser?.role === "REVENUE_OFFICER") return "Revenue";
     return "All";
   });
   const [actionLoading, setActionLoading] = useState(false);
@@ -155,9 +155,9 @@ export default function OfficerPortal() {
       setActionLoading(true);
       const res = await apiClient.patch(`/api/v1/applications/${selectedAppNo}`, {
         status: newStatus,
-        officer_name: currentUser.name || "Land Officer Vikram Singh",
-        role: currentUser.role || "REVENUE_OFFICER",
-        department: currentUser.department || (selectedDept === "All" ? "Revenue" : selectedDept),
+        officer_name: currentUser?.name || "Land Officer Vikram Singh",
+        role: currentUser?.role || "REVENUE_OFFICER",
+        department: currentUser?.department || (selectedDept === "All" ? "Revenue" : selectedDept),
         comments: actionComments,
         ...extra
       });
@@ -195,16 +195,26 @@ export default function OfficerPortal() {
           <p className="page-subtitle">{t("officer.subtitle")}</p>
         </div>
         <div style={{ display: "flex", gap: "var(--space-sm)", alignItems: "center", flexWrap: "wrap" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, background: "var(--bg-elevated)", border: "1px solid var(--border-default)", padding: "6px 12px", borderRadius: "var(--radius-md)" }}>
-            <span style={{ fontSize: 16 }}>🏛️</span>
-            <div style={{ textAlign: "left" }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>{currentUser.name}</div>
-              <div style={{ fontSize: 10, color: "var(--text-accent)" }}>{currentUser.title.split("(")[0]}</div>
+          {currentUser ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 8, background: "var(--bg-elevated)", border: "1px solid var(--border-default)", padding: "6px 12px", borderRadius: "var(--radius-md)" }}>
+              <span style={{ fontSize: 16 }}>🏛️</span>
+              <div style={{ textAlign: "left" }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>{currentUser.name}</div>
+                <div style={{ fontSize: 10, color: "var(--text-accent)" }}>{currentUser.title?.split("(")[0]}</div>
+              </div>
+              <button
+                onClick={() => logout()}
+                className="badge badge-error"
+                style={{ border: "none", background: "rgba(239, 68, 68, 0.1)", color: "#ef4444", fontSize: 10, cursor: "pointer", padding: "3px 6px" }}
+              >
+                Logout
+              </button>
             </div>
-            <Link href="/login" className="badge badge-info" style={{ textDecoration: "none", fontSize: 10, cursor: "pointer" }}>
-              Switch ⇄
+          ) : (
+            <Link href="/login" className="btn btn-primary" style={{ fontSize: 12 }}>
+              🔑 Officer Login
             </Link>
-          </div>
+          )}
           <Link href="/officer/conflicts" className="btn btn-outline" style={{ fontSize: 12 }}>
             ⚠️ {t("nav.conflicts")} ({3})
           </Link>

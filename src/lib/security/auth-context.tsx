@@ -37,7 +37,8 @@ export interface CitizenSignupPayload {
 }
 
 export interface AuthContextType {
-  currentUser: UserPersona;
+  currentUser: UserPersona | null;
+  isAuthenticated: boolean;
   allPersonas: UserPersona[];
   isMounted: boolean;
   loginAs: (roleOrId: string) => void;
@@ -55,7 +56,7 @@ export interface AuthContextType {
   logout: () => void;
   hasPermission: (permission: Permission) => boolean;
   checkJurisdiction: (targetScope: { state_code?: string; district_code?: string; circle_code?: string }) => boolean;
-  getInitials: (name: string) => string;
+  getInitials: (name?: string) => string;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -74,49 +75,56 @@ function subscribeToAuth(callback: () => void) {
 }
 
 let cachedUserJson = "";
-let cachedUserPersona: UserPersona = DEMO_PERSONAS[0];
+let cachedUserPersona: UserPersona | null = null;
 
-function getAuthSnapshot(): UserPersona {
-  if (typeof window === "undefined") return DEMO_PERSONAS[0];
+function getAuthSnapshot(): UserPersona | null {
+  if (typeof window === "undefined") return null;
   try {
     const raw = localStorage.getItem(AUTH_STORAGE_KEY) || localStorage.getItem("landstack_user");
     if (raw && raw !== cachedUserJson) {
       cachedUserJson = raw;
       const parsed = JSON.parse(raw);
-      const match = DEMO_PERSONAS.find(
-        (p) => p.id === parsed.id || p.officialId === parsed.officialId || p.role === parsed.role
-      );
-      if (match) {
-        cachedUserPersona = { ...match, ...parsed };
+      if (parsed && typeof parsed === "object") {
+        const match = DEMO_PERSONAS.find(
+          (p) => p.id === parsed.id || p.officialId === parsed.officialId || p.role === parsed.role
+        );
+        if (match) {
+          cachedUserPersona = { ...match, ...parsed };
+        } else {
+          cachedUserPersona = {
+            id: parsed.id || "CITIZEN_CUSTOM",
+            officialId: parsed.officialId || "CITIZEN-001",
+            name: parsed.name || "Citizen User",
+            role: parsed.role || "CITIZEN",
+            userType: parsed.userType || "CITIZEN",
+            title: parsed.title || "Citizen / Land Owner",
+            department: parsed.department || "Public Citizen Portal",
+            icon: "User",
+            jurisdiction: parsed.jurisdiction || "Bihar",
+            stateCode: parsed.stateCode || "BR",
+            districtCode: parsed.districtCode || "BR-10",
+            circleCode: parsed.circleCode || "Basopatti",
+            description: "Registered Citizen User",
+            landingUrl: parsed.landingUrl || "/",
+            email: parsed.email || "",
+            phone: parsed.phone || "",
+          };
+        }
       } else {
-        cachedUserPersona = {
-          id: parsed.id || "CITIZEN_CUSTOM",
-          officialId: parsed.officialId || "CITIZEN-001",
-          name: parsed.name || "Citizen User",
-          role: parsed.role || "CITIZEN",
-          userType: parsed.userType || "CITIZEN",
-          title: parsed.title || "Citizen / Land Owner",
-          department: parsed.department || "Public Citizen Portal",
-          icon: "User",
-          jurisdiction: parsed.jurisdiction || "Bihar",
-          stateCode: parsed.stateCode || "BR",
-          districtCode: parsed.districtCode || "BR-10",
-          circleCode: parsed.circleCode || "Basopatti",
-          description: "Registered Citizen User",
-          landingUrl: parsed.landingUrl || "/",
-          email: parsed.email || "",
-          phone: parsed.phone || "",
-        };
+        cachedUserPersona = null;
       }
     } else if (!raw) {
-      cachedUserPersona = DEMO_PERSONAS[0];
+      cachedUserJson = "";
+      cachedUserPersona = null;
     }
-  } catch {}
+  } catch {
+    cachedUserPersona = null;
+  }
   return cachedUserPersona;
 }
 
-function getAuthServerSnapshot(): UserPersona {
-  return DEMO_PERSONAS[0];
+function getAuthServerSnapshot(): UserPersona | null {
+  return null;
 }
 
 function subscribeToMounted() {
@@ -132,31 +140,43 @@ function getMountedServerSnapshot() {
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const currentUser = useSyncExternalStore(subscribeToAuth, getAuthSnapshot, getAuthServerSnapshot);
   const isMounted = useSyncExternalStore(subscribeToMounted, getMountedSnapshot, getMountedServerSnapshot);
+  const isAuthenticated = Boolean(currentUser);
 
-  const saveUserSession = useCallback((userObj: UserPersona) => {
+  const saveUserSession = useCallback((userObj: UserPersona | null) => {
     try {
-      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(userObj));
-      localStorage.setItem("landstack_user", JSON.stringify(userObj));
-      document.cookie = `landstack_role=${userObj.role}; path=/; max-age=86400; SameSite=Lax`;
-      cachedUserJson = JSON.stringify(userObj);
-      cachedUserPersona = userObj;
+      if (userObj) {
+        localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(userObj));
+        localStorage.setItem("landstack_user", JSON.stringify(userObj));
+        document.cookie = `landstack_role=${userObj.role}; path=/; max-age=86400; SameSite=Lax`;
+        cachedUserJson = JSON.stringify(userObj);
+        cachedUserPersona = userObj;
+      } else {
+        localStorage.removeItem(AUTH_STORAGE_KEY);
+        localStorage.removeItem("landstack_user");
+        document.cookie = `landstack_role=; path=/; max-age=0; SameSite=Lax`;
+        cachedUserJson = "";
+        cachedUserPersona = null;
+      }
       window.dispatchEvent(new CustomEvent(AUTH_EVENT_NAME, { detail: userObj }));
     } catch (e) {
       console.warn("Auth save error:", e);
     }
   }, []);
 
-  const loginAs = useCallback((roleOrId: string) => {
-    const match = DEMO_PERSONAS.find(
-      (p) =>
-        p.id === roleOrId ||
-        p.officialId?.toLowerCase() === roleOrId.toLowerCase() ||
-        p.role === roleOrId ||
-        p.email.toLowerCase() === roleOrId.toLowerCase()
-    ) || DEMO_PERSONAS[0];
+  const loginAs = useCallback(
+    (roleOrId: string) => {
+      const match = DEMO_PERSONAS.find(
+        (p) =>
+          p.id === roleOrId ||
+          p.officialId?.toLowerCase() === roleOrId.toLowerCase() ||
+          p.role === roleOrId ||
+          p.email.toLowerCase() === roleOrId.toLowerCase()
+      ) || DEMO_PERSONAS[0];
 
-    saveUserSession(match);
-  }, [saveUserSession]);
+      saveUserSession(match);
+    },
+    [saveUserSession]
+  );
 
   const signupCitizen = useCallback(async (payload: CitizenSignupPayload) => {
     try {
@@ -275,20 +295,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const logout = useCallback(() => {
-    const citizen = DEMO_PERSONAS[0];
-    saveUserSession(citizen);
+    saveUserSession(null);
+    if (typeof window !== "undefined") {
+      window.location.href = "/login";
+    }
   }, [saveUserSession]);
 
   const hasPermission = useCallback(
     (permission: Permission): boolean => {
+      if (!currentUser) {
+        // Public permissions available to anonymous visitors
+        return [
+          "parcel.search",
+          "parcel.read",
+          "land360.view",
+          "SEARCH_PUBLIC_PARCEL",
+          "VIEW_PUBLIC_GIS",
+        ].includes(permission as string);
+      }
       const allowed = (ROLE_PERMISSIONS as Record<string, Permission[]>)[currentUser.role] || [];
       return allowed.includes(permission);
     },
-    [currentUser.role]
+    [currentUser]
   );
 
   const checkJurisdiction = useCallback(
     (targetScope: { state_code?: string; district_code?: string; circle_code?: string }): boolean => {
+      if (!currentUser) return true; // public search
       if (currentUser.role === "ADMIN" || currentUser.role === "SUPER_ADMIN" || currentUser.stateCode === "ALL") {
         return true;
       }
@@ -317,8 +350,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [currentUser]
   );
 
-  const getInitials = useCallback((name: string): string => {
-    if (!name) return "US";
+  const getInitials = useCallback((name?: string): string => {
+    if (!name) return "GU"; // Guest User
     const parts = name.trim().split(" ");
     if (parts.length >= 2) {
       return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
@@ -330,6 +363,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     <AuthContext.Provider
       value={{
         currentUser,
+        isAuthenticated,
         allPersonas: DEMO_PERSONAS,
         isMounted,
         loginAs,
