@@ -159,7 +159,6 @@ export default function ServicesPage() {
           >
             <Link
               href={`/services/${s.id}`}
-              onClick={(e) => handleServiceClick(e, s.id)}
               style={{ textDecoration: "none", color: "inherit", display: "block", height: "100%" }}
             >
               <div className="card card-clickable" style={{ height: "100%" }}>

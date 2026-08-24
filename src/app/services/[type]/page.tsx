@@ -42,39 +42,13 @@ function ServiceFormContent() {
   const [appId, setAppId] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  // If user is not logged in, prompt to login with return redirect
-  if (!currentUser) {
-    return (
-      <div className="app-content animate-in" style={{ maxWidth: 600, margin: "24px auto" }}>
-        <div className="card" style={{ textAlign: "center", padding: "var(--space-2xl)" }}>
-          <div style={{ width: 56, height: 56, borderRadius: "50%", background: "rgba(2, 132, 199, 0.1)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto var(--space-md)", color: "var(--brand-primary)" }}>
-            <Lucide.Lock size={28} />
-          </div>
-          <h2 style={{ fontSize: 20, fontWeight: 800, color: "var(--text-primary)", marginBottom: 8 }}>
-            Citizen Login Required
-          </h2>
-          <p style={{ fontSize: 13, color: "var(--text-secondary)", marginBottom: "var(--space-lg)", lineHeight: 1.6 }}>
-            You must be logged in as a verified citizen to submit statutory applications for <strong>{info.name}</strong> to the <strong>{info.department}</strong>.
-          </p>
-          <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
-            <Link
-              href={`/login?redirect=/services/${type}`}
-              className="btn btn-primary"
-              style={{ fontWeight: 700, padding: "10px 20px" }}
-            >
-              <span>🔑 Login / Sign Up to Continue</span>
-            </Link>
-            <Link href="/services" className="btn btn-secondary">
-              ← Back to Services
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!currentUser) {
+      router.push(`/login?redirect=/services/${type}`);
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
@@ -124,11 +98,11 @@ function ServiceFormContent() {
             </div>
             <div className="field-row">
               <span className="field-label">Applicant Name</span>
-              <span className="field-value">{currentUser.name}</span>
+              <span className="field-value">{currentUser?.name || "Citizen Applicant"}</span>
             </div>
             <div className="field-row">
               <span className="field-label">Registered Contact</span>
-              <span className="field-value">{currentUser.phone || "—"}</span>
+              <span className="field-value">{currentUser?.phone || "—"}</span>
             </div>
             <div className="field-row">
               <span className="field-label">Routing Department</span>
@@ -146,7 +120,7 @@ function ServiceFormContent() {
 
           <div style={{ display: "flex", gap: "var(--space-sm)", justifyContent: "center", flexWrap: "wrap" }}>
             <button className="btn btn-primary" onClick={() => router.push("/applications")}>
-              📋 Track in My Applications →
+              📋 Track in Applications →
             </button>
             <button className="btn btn-secondary" onClick={() => router.push("/services")}>
               Back to Services
@@ -166,28 +140,59 @@ function ServiceFormContent() {
             <h1 className="page-title">{info.name}</h1>
           </div>
           <p className="page-subtitle">
-            Routing to <strong>{info.department}</strong> • Auto-authenticated as {currentUser.name} ({currentUser.phone})
+            Routing to <strong>{info.department}</strong> • {currentUser ? `Auto-authenticated as ${currentUser.name} (${currentUser.phone})` : "Public Citizen Application Form"}
           </p>
         </div>
       </div>
 
       <form onSubmit={handleSubmit} style={{ maxWidth: 640 }}>
-        {/* Applicant Verification Card */}
-        <div className="card" style={{ marginBottom: "var(--space-md)", background: "var(--bg-elevated)", border: "1px solid var(--border-default)" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{ width: 36, height: 36, borderRadius: "50%", background: "var(--brand-primary)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 13 }}>
-              {currentUser.name ? currentUser.name.slice(0, 2).toUpperCase() : "CI"}
-            </div>
-            <div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)" }}>
-                {currentUser.name}
+        {/* Applicant Verification / Guest Preview Card */}
+        {currentUser ? (
+          <div className="card" style={{ marginBottom: "var(--space-md)", background: "var(--bg-elevated)", border: "1px solid var(--border-default)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{ width: 36, height: 36, borderRadius: "50%", background: "var(--brand-primary)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 13 }}>
+                {currentUser.name ? currentUser.name.slice(0, 2).toUpperCase() : "CI"}
               </div>
-              <div style={{ fontSize: 11, color: "var(--text-secondary)" }}>
-                {currentUser.phone} • {currentUser.jurisdiction}
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)" }}>
+                  {currentUser.name}
+                </div>
+                <div style={{ fontSize: 11, color: "var(--text-secondary)" }}>
+                  {currentUser.phone} • {currentUser.jurisdiction}
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        ) : (
+          <div
+            className="card"
+            style={{
+              marginBottom: "var(--space-md)",
+              background: "var(--bg-elevated)",
+              border: "1px solid var(--border-default)",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              flexWrap: "wrap",
+              gap: 12,
+              padding: "12px 16px",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ fontSize: 20 }}>🔒</span>
+              <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>
+                <strong style={{ color: "var(--text-primary)" }}>Guest Preview:</strong> You can preview and fill in the service form below. Submitting will prompt for mobile login.
+              </div>
+            </div>
+            <Link
+              href={`/login?redirect=/services/${type}`}
+              className="btn btn-primary"
+              style={{ fontSize: 12, padding: "6px 14px" }}
+            >
+              <span>🔑 Login / Sign Up</span>
+            </Link>
+          </div>
+        )}
 
         <div className="card" style={{ marginBottom: "var(--space-md)" }}>
           <h3 className="card-title" style={{ marginBottom: "var(--space-md)" }}>Parcel Information</h3>
@@ -246,7 +251,7 @@ function ServiceFormContent() {
               </div>
               <div style={{ marginBottom: "var(--space-md)" }}>
                 <label className="field-label" style={{ display: "block", marginBottom: 4 }}>Transferee / New Owner Name *</label>
-                <input className="input" placeholder="Full Name of Transferee" value={form.new_owner || currentUser.name} onChange={(e) => setForm({ ...form, new_owner: e.target.value })} required />
+                <input className="input" placeholder="Full Name of Transferee" value={form.new_owner || currentUser?.name || ""} onChange={(e) => setForm({ ...form, new_owner: e.target.value })} required />
               </div>
             </>
           )}
@@ -270,9 +275,13 @@ function ServiceFormContent() {
           )}
         </div>
 
-        <div style={{ display: "flex", gap: "var(--space-sm)" }}>
+        <div style={{ display: "flex", gap: "var(--space-sm)", flexWrap: "wrap" }}>
           <button type="submit" className="btn btn-primary btn-lg" disabled={loading} style={{ fontWeight: 700 }}>
-            {loading ? "Dispatched to Department..." : `Submit Application to ${info.department} →`}
+            {!currentUser
+              ? `🔑 Login & Submit to ${info.department} →`
+              : loading
+                ? "Dispatched to Department..."
+                : `Submit Application to ${info.department} →`}
           </button>
           <button type="button" className="btn btn-secondary btn-lg" onClick={() => router.push("/services")}>Cancel</button>
         </div>
