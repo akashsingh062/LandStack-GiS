@@ -3,25 +3,9 @@
  * Handles Citizen Sign-Up, Profile Storage, and Department Official Validation (Password: )
  */
 
-import { Pool } from "pg";
+import { getPool } from "@/lib/db";
 import { UserRole, UserType } from "./types";
 import { normalizePhoneNumber } from "./otp-service";
-
-declare global {
-  var landstackDbPool: Pool | undefined;
-}
-
-function getPool(): Pool {
-  if (!globalThis.landstackDbPool) {
-    globalThis.landstackDbPool = new Pool({
-      connectionString: process.env.DATABASE_URL,
-      ssl: { rejectUnauthorized: false },
-      max: 10,
-      idleTimeoutMillis: 30000,
-    });
-  }
-  return globalThis.landstackDbPool;
-}
 
 import {
   DEPARTMENTS,
