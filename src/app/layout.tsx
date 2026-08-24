@@ -20,6 +20,7 @@ function getLocalizedNavLabel(label: string, t: (k: string) => string): string {
   if (norm.includes("search") || norm.includes("360")) return t("nav.search");
   if (norm.includes("application")) return t("nav.applications");
   if (norm.includes("service")) return t("nav.services");
+  if (norm.includes("profile") || norm.includes("account")) return "My Profile";
   if (norm.includes("officer") || norm.includes("desk") || norm.includes("portal")) return t("nav.officer_desk");
   if (norm.includes("conflict") || norm.includes("dispute")) return t("nav.conflicts");
   if (norm.includes("ai") || norm.includes("intelligence") || norm.includes("satellite")) return t("nav.intelligence");
@@ -111,27 +112,36 @@ function Sidebar({ isOpen, onClose, isOverlay }: { isOpen: boolean; onClose: () 
           {/* User Auth Card or Login CTA */}
           {activeUser ? (
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <div
-                className="sidebar-user"
-                style={{
-                  background: "var(--bg-input)",
-                  border: "1px solid var(--border-default)",
-                  borderRadius: "var(--radius-md)",
-                  padding: "10px",
-                }}
+              <Link
+                href="/profile"
+                onClick={onClose}
+                style={{ textDecoration: "none", color: "inherit", display: "block" }}
               >
-                <div className="sidebar-avatar" style={{ background: "var(--brand-primary)", color: "#fff", fontWeight: 700 }}>
-                  {getInitials(activeUser.name)}
-                </div>
-                <div className="sidebar-user-info" style={{ overflow: "hidden" }}>
-                  <div className="sidebar-user-name" style={{ fontWeight: 700 }}>
-                    {activeUser.name}
+                <div
+                  className="sidebar-user"
+                  style={{
+                    background: "var(--bg-input)",
+                    border: "1px solid var(--border-default)",
+                    borderRadius: "var(--radius-md)",
+                    padding: "10px",
+                    cursor: "pointer",
+                    transition: "border-color 0.15s ease, background 0.15s ease",
+                  }}
+                >
+                  <div className="sidebar-avatar" style={{ background: "var(--brand-primary)", color: "#fff", fontWeight: 700 }}>
+                    {getInitials(activeUser.name)}
                   </div>
-                  <div className="sidebar-user-role" style={{ fontSize: 11, color: "var(--text-accent)", whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}>
-                    {activeUser.title?.split("/")[0].trim() || activeUser.role}
+                  <div className="sidebar-user-info" style={{ overflow: "hidden" }}>
+                    <div className="sidebar-user-name" style={{ fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <span>{activeUser.name}</span>
+                      <span style={{ fontSize: 10, color: "var(--brand-primary)", fontWeight: 600 }}>Profile →</span>
+                    </div>
+                    <div className="sidebar-user-role" style={{ fontSize: 11, color: "var(--text-accent)", whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}>
+                      {activeUser.title?.split("/")[0].trim() || activeUser.role}
+                    </div>
                   </div>
                 </div>
-              </div>
+              </Link>
 
               <button
                 onClick={() => {

@@ -10,21 +10,8 @@ import * as Lucide from "lucide-react";
 export { DEMO_PERSONAS, type UserPersona };
 
 export const getLucideIcon = (iconName: string) => {
-  switch (iconName) {
-    case "User": return Lucide.User;
-    case "Briefcase": return Lucide.Briefcase;
-    case "FileSignature": return Lucide.FileSignature;
-    case "Ruler": return Lucide.Ruler;
-    case "Landmark": return Lucide.Landmark;
-    case "Shield": return Lucide.Shield;
-    case "ShieldCheck": return Lucide.ShieldCheck;
-    case "Home": return Lucide.Home;
-    case "Map": return Lucide.Map;
-    case "LayoutDashboard": return Lucide.LayoutDashboard;
-    case "Settings": return Lucide.Settings;
-    case "Search": return Lucide.Search;
-    default: return Lucide.User;
-  }
+  const icon = (Lucide as unknown as Record<string, React.ComponentType<{ size?: number; className?: string; style?: React.CSSProperties }>>)[iconName];
+  return icon || Lucide.User;
 };
 
 export interface CitizenSignupPayload {
@@ -43,6 +30,7 @@ export interface AuthContextType {
   allPersonas: UserPersona[];
   isMounted: boolean;
   loginAs: (roleOrId: string) => void;
+  updateUserProfile: (updates: Partial<UserPersona>) => void;
   signupCitizen: (payload: CitizenSignupPayload) => Promise<{ success: boolean; simulated_code?: string; error?: string }>;
   loginWithOtp: (
     phone: string,
@@ -360,6 +348,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return name.slice(0, 2).toUpperCase();
   }, []);
 
+  const updateUserProfile = useCallback(
+    (updates: Partial<UserPersona>) => {
+      if (!currentUser) return;
+      const updated: UserPersona = { ...currentUser, ...updates };
+      saveUserSession(updated);
+    },
+    [currentUser, saveUserSession]
+  );
+
   return (
     <AuthContext.Provider
       value={{
@@ -368,6 +365,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         allPersonas: DEMO_PERSONAS,
         isMounted,
         loginAs,
+        updateUserProfile,
         signupCitizen,
         loginWithOtp,
         loginOfficial,

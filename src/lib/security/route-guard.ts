@@ -46,6 +46,7 @@ export const ALL_NAV_SECTIONS: NavSection[] = [
       { href: "/", icon: "Home", label: "Dashboard", allowedRoles: ALL_ROLES },
       { href: "/map", icon: "Map", label: "GIS Map", allowedRoles: ALL_ROLES },
       { href: "/search", icon: "Search", label: "Search Land", allowedRoles: ALL_ROLES },
+      { href: "/profile", icon: "User", label: "My Profile", allowedRoles: ALL_ROLES },
     ],
   },
   {
@@ -77,6 +78,7 @@ export const ALL_NAV_SECTIONS: NavSection[] = [
 // Strict Route Access Rules for URL Path Matching
 export const ROUTE_ACCESS_RULES: { prefix: string; exact?: boolean; allowedRoles: UserRole[] }[] = [
   { prefix: "/login", allowedRoles: ALL_ROLES },
+  { prefix: "/profile", allowedRoles: ALL_ROLES },
   { prefix: "/map", allowedRoles: ALL_ROLES },
   { prefix: "/search", allowedRoles: ALL_ROLES },
   { prefix: "/parcel", allowedRoles: ALL_ROLES },
