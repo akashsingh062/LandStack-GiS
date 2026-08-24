@@ -128,6 +128,43 @@ const OFFICIALS = [
   },
 ];
 
+const INITIAL_CITIZENS = [
+  {
+    username: "citizen_9876543210",
+    official_id: "CITIZEN-3210",
+    name: "Amitabh Sharma",
+    email: "amitabh@bihar.gov.in",
+    phone: "+919876543210",
+    role: "CITIZEN",
+    user_type: "CITIZEN",
+    department: "Public Citizen Portal",
+    title: "Citizen / Land Owner",
+    jurisdiction: "Mauza Arghawa (33), Basopatti, Madhubani (Bihar)",
+    state_code: "BR",
+    district_code: "BR-10",
+    circle_code: "Basopatti",
+    village_code: "Arghawa (33)",
+    password_hash: null,
+  },
+  {
+    username: "citizen_9876500001",
+    official_id: "CITIZEN-0001",
+    name: "Ramesh Kumar",
+    email: "ramesh.kumar@biharbhumi.bihar.gov.in",
+    phone: "+919876500001",
+    role: "CITIZEN",
+    user_type: "CITIZEN",
+    department: "Public Citizen Portal",
+    title: "Citizen / Land Owner",
+    jurisdiction: "Mauza Arghawa (33), Basopatti, Madhubani (Bihar)",
+    state_code: "BR",
+    district_code: "BR-10",
+    circle_code: "Basopatti",
+    village_code: "Arghawa (33)",
+    password_hash: null,
+  },
+];
+
 
 async function seedDatabase() {
   console.log("Connecting to Supabase Postgres database...");

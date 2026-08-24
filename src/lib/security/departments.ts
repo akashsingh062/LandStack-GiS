@@ -5,8 +5,6 @@
 
 import { UserRole } from "./types";
 
-export const COMMON_STAFF_PASSWORD = "";
-
 export interface DepartmentOption {
   id: string;
   name: string;
