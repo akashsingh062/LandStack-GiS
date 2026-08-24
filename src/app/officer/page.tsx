@@ -3,12 +3,12 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { calculateSlaStatus } from "@/lib/workflow";
 import { useAuth } from "@/lib/security/auth-context";
 import { useLanguage } from "@/lib/i18n/language-context";
 import {
   getWorkflowDefinition,
   getCurrentStageIndex,
+  calculateSlaStatus,
 } from "@/lib/workflow/workflow-engine";
 import apiClient from "@/lib/api-client";
 import {
@@ -242,13 +242,22 @@ export default function OfficerPortal() {
         setModalMode(null);
         setActionRemarks("");
         if (res.data?.application) {
+          const updatedApp = res.data.application;
           setSelectedDetail((prev: any) => ({
             ...prev,
-            application: res.data.application,
+            application: updatedApp,
+            history: res.data.history || prev?.history,
           }));
+          setApplications((prev) =>
+            prev.map((item) =>
+              item.application_no === updatedApp.application_no
+                ? { ...item, ...updatedApp }
+                : item,
+            ),
+          );
         }
-        await fetchApplications();
-        if (selectedAppNo) await fetchDetail(selectedAppNo);
+        fetchApplications();
+        if (selectedAppNo) fetchDetail(selectedAppNo);
       }
     } catch (err) {
       console.error("Failed to execute action:", err);

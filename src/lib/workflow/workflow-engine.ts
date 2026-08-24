@@ -383,3 +383,24 @@ export function getNextWorkflowTransition(
     actionText,
   };
 }
+
+export function calculateSlaStatus(createdAt: string | Date, targetDays: number): {
+  deadline: Date;
+  daysRemaining: number;
+  status: "ON_TRACK" | "APPROACHING_SLA" | "SLA_BREACHED";
+  badgeClass: string;
+} {
+  const created = new Date(createdAt);
+  const deadline = new Date(created.getTime() + (targetDays || 7) * 24 * 60 * 60 * 1000);
+  const now = new Date();
+  const diffMs = deadline.getTime() - now.getTime();
+  const daysRemaining = Math.round(diffMs / (24 * 60 * 60 * 1000) * 10) / 10;
+
+  if (diffMs < 0) {
+    return { deadline, daysRemaining, status: "SLA_BREACHED", badgeClass: "badge-error" };
+  } else if (daysRemaining <= 1) {
+    return { deadline, daysRemaining, status: "APPROACHING_SLA", badgeClass: "badge-warning" };
+  } else {
+    return { deadline, daysRemaining, status: "ON_TRACK", badgeClass: "badge-success" };
+  }
+}

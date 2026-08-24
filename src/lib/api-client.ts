@@ -17,6 +17,9 @@ export const apiClient: AxiosInstance = axios.create({
 // Request Interceptor: Attach LandStack User Context & Role Headers
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
+    // Prevent stale caching on dynamic mutations and fetches
+    config.headers.set("Cache-Control", "no-cache");
+
     if (typeof window !== "undefined") {
       try {
         const storedUser = localStorage.getItem("landstack_active_user") || localStorage.getItem("landstack_user");
