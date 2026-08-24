@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import apiClient from "@/lib/api-client";
@@ -39,6 +39,8 @@ import {
   ShieldAlert,
   Clock,
   Sparkles,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 
 const TABS = [
@@ -78,6 +80,16 @@ export default function ParcelPage() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
+  const tabsContainerRef = useRef<HTMLDivElement>(null);
+
+  const scrollTabs = (direction: "left" | "right") => {
+    if (tabsContainerRef.current) {
+      tabsContainerRef.current.scrollBy({
+        left: direction === "left" ? -240 : 240,
+        behavior: "smooth",
+      });
+    }
+  };
 
   useEffect(() => {
     if (!params.id) return;
@@ -234,18 +246,98 @@ export default function ParcelPage() {
         </div>
       )}
 
-      {/* Tabs */}
-      <div className="tabs no-scrollbar" style={{ marginBottom: "var(--space-lg)", display: "flex", overflowX: "auto", whiteSpace: "nowrap", paddingBottom: 0, scrollbarWidth: "none", msOverflowStyle: "none" }}>
-        {TABS.map((tab) => (
-          <button
-            key={tab.id}
-            className={`tab ${activeTab === tab.id ? "active" : ""}`}
-            onClick={() => setActiveTab(tab.id)}
-            style={{ flexShrink: 0, display: "inline-flex", alignItems: "center", gap: 6 }}
-          >
-            {tab.icon} {tab.label}
-          </button>
-        ))}
+      {/* Tabs with Horizontal Scroll Arrow Buttons */}
+      <div style={{ position: "relative", display: "flex", alignItems: "center", marginBottom: "var(--space-lg)", gap: 6 }}>
+        <button
+          type="button"
+          onClick={() => scrollTabs("left")}
+          aria-label="Scroll tabs left"
+          title="Scroll Left"
+          style={{
+            flexShrink: 0,
+            width: 32,
+            height: 36,
+            borderRadius: "var(--radius-md)",
+            background: "var(--bg-card)",
+            border: "1px solid var(--border-default)",
+            color: "var(--text-primary)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+            boxShadow: "var(--shadow-sm)",
+            transition: "all 0.15s ease",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = "var(--bg-app)";
+            e.currentTarget.style.borderColor = "var(--brand-primary)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = "var(--bg-card)";
+            e.currentTarget.style.borderColor = "var(--border-default)";
+          }}
+        >
+          <ChevronLeft size={16} />
+        </button>
+
+        <div
+          ref={tabsContainerRef}
+          className="tabs no-scrollbar"
+          style={{
+            flex: 1,
+            display: "flex",
+            overflowX: "auto",
+            whiteSpace: "nowrap",
+            paddingBottom: 0,
+            scrollbarWidth: "none",
+            msOverflowStyle: "none",
+            scrollBehavior: "smooth",
+            margin: 0,
+          }}
+        >
+          {TABS.map((tab) => (
+            <button
+              key={tab.id}
+              className={`tab ${activeTab === tab.id ? "active" : ""}`}
+              onClick={() => setActiveTab(tab.id)}
+              style={{ flexShrink: 0, display: "inline-flex", alignItems: "center", gap: 6 }}
+            >
+              {tab.icon} {tab.label}
+            </button>
+          ))}
+        </div>
+
+        <button
+          type="button"
+          onClick={() => scrollTabs("right")}
+          aria-label="Scroll tabs right"
+          title="Scroll Right"
+          style={{
+            flexShrink: 0,
+            width: 32,
+            height: 36,
+            borderRadius: "var(--radius-md)",
+            background: "var(--bg-card)",
+            border: "1px solid var(--border-default)",
+            color: "var(--text-primary)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+            boxShadow: "var(--shadow-sm)",
+            transition: "all 0.15s ease",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = "var(--bg-app)";
+            e.currentTarget.style.borderColor = "var(--brand-primary)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = "var(--bg-card)";
+            e.currentTarget.style.borderColor = "var(--border-default)";
+          }}
+        >
+          <ChevronRight size={16} />
+        </button>
       </div>
 
       {/* Tab Content */}
