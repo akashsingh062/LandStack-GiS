@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = request.nextUrl;
@@ -66,10 +68,19 @@ export async function GET(request: NextRequest) {
 
     const result = await query(sql, params);
 
-    return NextResponse.json({
-      applications: result.rows || [],
-      count: result.rows ? result.rows.length : 0,
-    });
+    return NextResponse.json(
+      {
+        applications: result.rows || [],
+        count: result.rows ? result.rows.length : 0,
+      },
+      {
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
+        },
+      }
+    );
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : String(error);
     console.error("[API /api/v1/applications] Database query error:", msg);
