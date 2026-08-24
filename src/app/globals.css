@@ -1188,6 +1188,17 @@ a:hover { text-decoration: underline; }
   border-top-color: var(--bg-card) !important;
 }
 
+/* ── Skeleton Shimmer Animations ── */
+@keyframes shimmerBar {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
 
+@keyframes skeletonPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
 
-
+.skeleton-pulse {
+  animation: skeletonPulse 1.5s ease-in-out infinite;
+}
