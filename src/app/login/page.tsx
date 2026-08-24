@@ -1,15 +1,17 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import React, { useState, useRef, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/security/auth-context";
 import { DEPARTMENTS, COMMON_STAFF_PASSWORD } from "@/lib/security/departments";
 import { useLanguage } from "@/lib/i18n/language-context";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import * as Lucide from "lucide-react";
 
-export default function LoginPage() {
+function LoginPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectParam = searchParams.get("redirect") || "";
   const { loginWithOtp, signupCitizen, loginOfficial } = useAuth();
   const { t } = useLanguage();
 
@@ -178,9 +180,10 @@ export default function LoginPage() {
       return;
     }
 
-    setAuthFeedback("✓ Identity Verified. Logging into Citizen Dashboard...");
+    const targetUrl = redirectParam && redirectParam.startsWith("/") ? redirectParam : "/";
+    setAuthFeedback(`✓ Identity Verified. Logging into LandStack...`);
     setTimeout(() => {
-      router.push("/");
+      router.push(targetUrl);
     }, 400);
   };
 
@@ -202,9 +205,13 @@ export default function LoginPage() {
       return;
     }
 
+    const targetUrl = redirectParam && redirectParam.startsWith("/") && redirectParam !== "/"
+      ? redirectParam
+      : (res.redirect_url || "/officer");
+
     setAuthFeedback("✓ Welcome Officer. Accessing Departmental Portal...");
     setTimeout(() => {
-      router.push(res.redirect_url || "/officer");
+      router.push(targetUrl);
     }, 400);
   };
 
@@ -739,5 +746,13 @@ export default function LoginPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div style={{ minHeight: "100vh", background: "#f8fafc" }} />}>
+      <LoginPageContent />
+    </Suspense>
   );
 }

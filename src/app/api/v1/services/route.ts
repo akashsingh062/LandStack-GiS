@@ -4,12 +4,12 @@ import { query } from "@/lib/db";
 const DEPARTMENT_MAP: Record<string, string> = {
   "ownership-verification": "Revenue Department",
   "ror-extract": "Revenue Department",
-  "encumbrance-certificate": "Registration Department",
-  "building-permission": "Municipal Authority",
-  "land-use-certificate": "Planning Department",
-  "property-tax": "Municipal Authority",
   "mutation": "Revenue Department",
-  "restriction-check": "Environment Department",
+  "restriction-check": "Revenue Department",
+  "encumbrance-certificate": "Registration Department",
+  "building-permission": "Planning Department",
+  "land-use-certificate": "Planning Department",
+  "property-tax": "Municipality Department",
 };
 
 const SERVICE_TITLES: Record<string, string> = {
@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     const {
       service_type,
       parcel_ulpin,
-      applicant_name = "Ramesh Kumar",
+      applicant_name = "Citizen Applicant",
       applicant_email,
       applicant_phone,
       purpose,
@@ -60,13 +60,17 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Insert service request
+    // Insert service request with SLA and current step
     const insertRes = await query(
       `INSERT INTO governance.service_requests (
         application_no, service_type, parcel_id, parcel_ulpin,
         applicant_name, applicant_email, applicant_phone, department,
-        purpose, details, priority, status, created_at, updated_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'SUBMITTED', NOW(), NOW())
+        purpose, details, priority, status, current_step,
+        target_sla_days, sla_deadline, sla_status, created_at, updated_at
+      ) VALUES (
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'SUBMITTED', 'Document Verification',
+        15, NOW() + INTERVAL '15 days', 'WITHIN_SLA', NOW(), NOW()
+      )
       RETURNING *`,
       [
         applicationNo,
@@ -85,9 +89,10 @@ export async function POST(request: NextRequest) {
 
     // Insert history entry
     await query(
-      `INSERT INTO governance.application_history (application_no, status, action, performed_by, created_at)
-       VALUES ($1, 'SUBMITTED', 'Application submitted by citizen', $2, NOW())`,
-      [applicationNo, applicant_name]
+      `INSERT INTO governance.application_history (
+        application_no, status, action, performed_by, role, department, created_at
+      ) VALUES ($1, 'SUBMITTED', 'Application submitted by citizen', $2, 'CITIZEN', $3, NOW())`,
+      [applicationNo, applicant_name, department]
     );
 
     return NextResponse.json({
