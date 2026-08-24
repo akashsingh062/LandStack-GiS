@@ -10,6 +10,7 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get("status");
     const applicant = searchParams.get("applicant");
     const phone = searchParams.get("phone");
+    const applicationNo = searchParams.get("application_no") || searchParams.get("q");
 
     let sql = `
       SELECT 
@@ -40,6 +41,12 @@ export async function GET(request: NextRequest) {
       WHERE 1=1
     `;
     const params: unknown[] = [];
+
+    // Filter by specific application number or ULPIN search
+    if (applicationNo && applicationNo.trim()) {
+      params.push(`%${applicationNo.trim()}%`);
+      sql += ` AND (application_no ILIKE $${params.length} OR parcel_ulpin ILIKE $${params.length})`;
+    }
 
     // Filter by department (matches "Revenue", "Revenue Department", "Revenue & Land Records", etc.)
     if (department && department !== "All") {

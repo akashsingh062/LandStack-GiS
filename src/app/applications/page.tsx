@@ -84,32 +84,42 @@ export default function ApplicationsPage() {
   const [applications, setApplications] = useState<any[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedDetail, setSelectedDetail] = useState<any | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
 
   const currentRole = currentUser?.role || "CITIZEN";
 
   useEffect(() => {
+    // When user is logged out, do NOT auto-load applications
+    if (!currentUser) {
+      setApplications([]);
+      setSelectedId(null);
+      setSelectedDetail(null);
+      setLoading(false);
+      return;
+    }
+
     let isMounted = true;
     const loadApps = async () => {
       try {
         setLoading(true);
         let url = "/api/v1/applications";
 
-        if (currentUser) {
-          if (currentRole === "CITIZEN") {
-            const params = new URLSearchParams();
-            if (currentUser.phone) params.set("phone", currentUser.phone);
-            if (currentUser.name) params.set("applicant", currentUser.name);
-            url = `/api/v1/applications?${params.toString()}`;
-          } else if (currentRole === "REGISTRATION_OFFICER") {
-            url = "/api/v1/applications?department=Registration";
-          } else if (currentRole === "PLANNING_OFFICER") {
-            url = "/api/v1/applications?department=Planning";
-          } else if (currentRole === "TAX_OFFICER") {
-            url = "/api/v1/applications?department=Municipality";
-          } else if (currentRole === "REVENUE_OFFICER") {
-            url = "/api/v1/applications?department=Revenue";
-          }
+        if (currentRole === "CITIZEN") {
+          const params = new URLSearchParams();
+          if (currentUser.phone) params.set("phone", currentUser.phone);
+          if (currentUser.name) params.set("applicant", currentUser.name);
+          url = `/api/v1/applications?${params.toString()}`;
+        } else if (currentRole === "REGISTRATION_OFFICER") {
+          url = "/api/v1/applications?department=Registration";
+        } else if (currentRole === "PLANNING_OFFICER") {
+          url = "/api/v1/applications?department=Planning";
+        } else if (currentRole === "TAX_OFFICER") {
+          url = "/api/v1/applications?department=Municipality";
+        } else if (currentRole === "REVENUE_OFFICER") {
+          url = "/api/v1/applications?department=Revenue";
         }
 
         const res = await apiClient.get(url);
@@ -156,6 +166,31 @@ export default function ApplicationsPage() {
     };
   }, [selectedId]);
 
+  const handleSearchSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchTerm.trim()) return;
+
+    setSearchLoading(true);
+    setSearchError(null);
+
+    try {
+      const res = await apiClient.get(`/api/v1/applications?application_no=${encodeURIComponent(searchTerm.trim())}`);
+      const found = res.data?.applications || [];
+      if (found.length > 0) {
+        setApplications(found);
+        setSelectedId(found[0].application_no);
+      } else {
+        setApplications([]);
+        setSelectedId(null);
+        setSearchError(`No application found matching "${searchTerm.trim()}". Please verify your Application Number.`);
+      }
+    } catch {
+      setSearchError("Failed to search application. Please try again.");
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
   const app = selectedDetail?.application || applications.find((a) => a.application_no === selectedId);
   const history = selectedDetail?.history || [];
 
@@ -166,40 +201,6 @@ export default function ApplicationsPage() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, ease: "easeOut" }}
     >
-      {/* Guest Notice Banner */}
-      {!currentUser && (
-        <motion.div
-          initial={{ opacity: 0, y: -6 }}
-          animate={{ opacity: 1, y: 0 }}
-          style={{
-            background: "var(--bg-elevated)",
-            border: "1px solid var(--border-default)",
-            borderRadius: "var(--radius-md)",
-            padding: "12px 16px",
-            marginBottom: "var(--space-md)",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            flexWrap: "wrap",
-            gap: 12,
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <span style={{ fontSize: 20 }}>📋</span>
-            <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>
-              <strong style={{ color: "var(--text-primary)" }}>Public Application Tracker:</strong> You can view the live inter-departmental statutory workflow and SLA milestones for any public application below.
-            </div>
-          </div>
-          <Link
-            href="/login?redirect=/applications"
-            className="btn btn-primary"
-            style={{ fontSize: 12, padding: "6px 14px" }}
-          >
-            <span>🔑 Login / Sign Up</span>
-          </Link>
-        </motion.div>
-      )}
-
       <motion.div
         className="page-header"
         initial={{ opacity: 0, y: 10 }}
@@ -215,7 +216,7 @@ export default function ApplicationsPage() {
           </div>
           <p className="page-subtitle">
             {!currentUser
-              ? "Public statutory tracker: Inspect real-time multi-department clearance workflows and SLA milestones"
+              ? "Public statutory tracker: Track your application status with your Application Number"
               : currentRole === "CITIZEN"
                 ? `Real-time statutory tracking for ${currentUser.name} (${currentUser.phone || "Verified Citizen"})`
                 : `Departmental case queue for ${currentUser?.title || "Officer"} (${currentUser?.jurisdiction || "Bihar"})`}
@@ -223,7 +224,7 @@ export default function ApplicationsPage() {
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           {!currentUser ? (
-            <Link href="/services" className="btn btn-primary">+ Apply for New Service</Link>
+            <Link href="/login?redirect=/applications" className="btn btn-primary"><span>🔑 Login to View All</span></Link>
           ) : currentRole === "CITIZEN" ? (
             <Link href="/services" className="btn btn-primary">+ Apply for New Service</Link>
           ) : (
@@ -232,37 +233,76 @@ export default function ApplicationsPage() {
         </div>
       </motion.div>
 
+      {/* Interactive Search Bar for Public & Logged-in tracking */}
+      <form onSubmit={handleSearchSubmit} style={{ display: "flex", gap: 8, marginBottom: "var(--space-lg)" }}>
+        <div style={{ position: "relative", flex: 1 }}>
+          <input
+            className="input"
+            placeholder="Enter Application Number (e.g. MUT-2026-0042) or Parcel ULPIN..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{ paddingLeft: 38, fontSize: 13 }}
+          />
+          <Lucide.Search size={16} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--text-tertiary)" }} />
+        </div>
+        <button type="submit" className="btn btn-primary" disabled={searchLoading} style={{ display: "flex", alignItems: "center", gap: 6, fontWeight: 700, whiteSpace: "nowrap" }}>
+          {searchLoading ? <Lucide.Loader2 size={16} className="animate-spin" /> : <Lucide.Search size={16} />}
+          Track Status
+        </button>
+      </form>
+
+      {searchError && (
+        <div className="alert alert-error" style={{ marginBottom: "var(--space-md)" }}>
+          <Lucide.AlertTriangle size={14} /> {searchError}
+        </div>
+      )}
+
       {loading ? (
         <div style={{ textAlign: "center", padding: "var(--space-2xl)", color: "var(--text-secondary)" }}>
           <div className="animate-pulse" style={{ fontSize: 24 }}>📄</div>
-          <p style={{ marginTop: "var(--space-sm)" }}>Querying real application records from PostgreSQL...</p>
+          <p style={{ marginTop: "var(--space-sm)" }}>Querying application records...</p>
         </div>
       ) : applications.length === 0 ? (
-        /* Clean Empty State when no fake data exists */
+        /* Clean Empty State when logged out or no search results */
         <motion.div
           initial={{ opacity: 0, scale: 0.98 }}
           animate={{ opacity: 1, scale: 1 }}
           className="card"
-          style={{ textAlign: "center", padding: "var(--space-2xl)", maxWidth: 540, margin: "24px auto" }}
+          style={{ textAlign: "center", padding: "var(--space-2xl)", maxWidth: 580, margin: "24px auto" }}
         >
           <div style={{ width: 56, height: 56, borderRadius: "50%", background: "var(--bg-elevated)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto var(--space-md)", color: "var(--text-secondary)" }}>
-            <Lucide.FileQuestion size={28} />
+            <Lucide.Search size={28} />
           </div>
-          <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 6 }}>No Applications Found</h3>
-          <p style={{ fontSize: 13, color: "var(--text-secondary)", marginBottom: "var(--space-lg)" }}>
-            {currentRole === "CITIZEN"
-              ? "You haven't submitted any service requests yet. Choose a service below to get certified land records, mutation, or clearances."
-              : "No pending departmental cases in this queue at the moment."}
+          <h3 style={{ fontSize: 18, fontWeight: 800, color: "var(--text-primary)", marginBottom: 8 }}>
+            {!currentUser ? "Track Your Land Application" : "No Applications Found"}
+          </h3>
+          <p style={{ fontSize: 13, color: "var(--text-secondary)", marginBottom: "var(--space-lg)", lineHeight: 1.6 }}>
+            {!currentUser
+              ? "Enter your statutory Application Number above to track live verification, department approvals, and SLA progress. Or log in with your citizen mobile number to view all your applications."
+              : currentRole === "CITIZEN"
+                ? "You haven't submitted any service requests yet. Choose a service below to get certified land records, mutation, or clearances."
+                : "No pending departmental cases in this queue at the moment."}
           </p>
-          {currentRole === "CITIZEN" ? (
-            <Link href="/services" className="btn btn-primary" style={{ fontWeight: 700 }}>
-              <span>+ Explore Citizen Services</span>
-            </Link>
-          ) : (
-            <Link href="/officer" className="btn btn-secondary">
-              Refresh Departmental Queue
-            </Link>
-          )}
+          <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
+            {!currentUser ? (
+              <>
+                <Link href="/login?redirect=/applications" className="btn btn-primary" style={{ fontWeight: 700, padding: "8px 18px" }}>
+                  <span>🔑 Login to View All My Applications</span>
+                </Link>
+                <Link href="/services" className="btn btn-secondary">
+                  + Explore Services
+                </Link>
+              </>
+            ) : currentRole === "CITIZEN" ? (
+              <Link href="/services" className="btn btn-primary" style={{ fontWeight: 700 }}>
+                <span>+ Explore Citizen Services</span>
+              </Link>
+            ) : (
+              <Link href="/officer" className="btn btn-secondary">
+                Refresh Departmental Queue
+              </Link>
+            )}
+          </div>
         </motion.div>
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: app ? "repeat(auto-fit, minmax(320px, 1fr))" : "1fr", gap: "var(--space-md)" }}>
