@@ -52,7 +52,7 @@ export const ALL_NAV_SECTIONS: NavSection[] = [
     label: "Citizen Services",
     items: [
       { href: "/services", icon: "ClipboardList", label: "Services", allowedRoles: ["CITIZEN", "ADMIN", "SUPER_ADMIN"] },
-      { href: "/applications", icon: "FileText", label: "My Applications", badge: "2", allowedRoles: ["CITIZEN", "ADMIN", "SUPER_ADMIN"] },
+      { href: "/applications", icon: "FileText", label: "My Applications", allowedRoles: ["CITIZEN", "ADMIN", "SUPER_ADMIN"] },
     ],
   },
   {

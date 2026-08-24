@@ -221,7 +221,7 @@ export default function Dashboard() {
           {[
             { icon: <Lucide.MapPin size={20} />, value: "3", label: t("stat.recorded_parcels"), bg: "var(--status-info-bg)", desc: "Khesra #1420, #1894, #1648" },
             { icon: <Lucide.Ruler size={20} />, value: "12.4 Ac", label: t("stat.total_landholding"), bg: "var(--status-success-bg)", desc: "Mauza Arghawa (33)" },
-            { icon: <Lucide.ClipboardList size={20} />, value: citizenApps.length || "2", label: t("stat.active_applications"), bg: "var(--status-warning-bg)", desc: "1 Approved, 1 In Review" },
+            { icon: <Lucide.ClipboardList size={20} />, value: String(citizenApps.length), label: t("stat.active_applications"), bg: "var(--status-warning-bg)", desc: citizenApps.length > 0 ? `${citizenApps.length} in system` : "No pending applications" },
             { icon: <Lucide.Wallet size={20} />, value: "₹ 45.00", label: t("stat.annual_lagan"), bg: "rgba(139,92,246,0.12)", desc: "Jamabandi #45 (Paid)" },
           ].map((s) => (
             <motion.div
