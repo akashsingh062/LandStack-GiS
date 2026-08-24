@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
-import { getNextWorkflowTransition } from "@/lib/workflow/workflow-engine";
+import {
+  getNextWorkflowTransition,
+  getWorkflowDefinition,
+  getCurrentStageIndex,
+} from "@/lib/workflow/workflow-engine";
 
 export async function GET(
   request: NextRequest,
@@ -123,17 +127,27 @@ export async function PATCH(
       targetDepartment = transition.nextDepartment;
       actionText = transition.actionText;
     } else if (determinedAction === "REJECT") {
+      const workflow = getWorkflowDefinition(application.service_type);
+      const curIdx = getCurrentStageIndex(workflow, application.current_step);
+      const stageObj = workflow.stages[curIdx] || workflow.stages[0];
+
       newStatus = "REJECTED";
-      newStep = `Rejected by ${department}`;
+      newStep = `Rejected by ${department} [Stage ${stageObj.stage}: ${stageObj.name}]`;
+      targetDepartment = department;
       actionText = comments 
-        ? `Application Rejected by ${officer_name} (${department}): "${comments}"`
-        : `Application Rejected by ${officer_name} (${department}) due to statutory non-compliance.`;
+        ? `Application Rejected at Stage ${stageObj.stage} (${stageObj.name}) by ${officer_name} (${department}): "${comments}"`
+        : `Application Rejected at Stage ${stageObj.stage} (${stageObj.name}) by ${officer_name} (${department}) due to statutory non-compliance.`;
     } else if (determinedAction === "REQUEST_INFO") {
+      const workflow = getWorkflowDefinition(application.service_type);
+      const curIdx = getCurrentStageIndex(workflow, application.current_step);
+      const stageObj = workflow.stages[curIdx] || workflow.stages[0];
+
       newStatus = "ACTION_REQUIRED";
-      newStep = `Action Required - Additional Documentation Requested by ${department}`;
+      newStep = `Action Required - Additional Documentation Requested by ${department} [Stage ${stageObj.stage}: ${stageObj.name}]`;
+      targetDepartment = department;
       actionText = comments
-        ? `Additional Documents Requested by ${officer_name} (${department}): "${comments}"`
-        : `Additional Documents Requested by ${officer_name} (${department}).`;
+        ? `Additional Documents Requested at Stage ${stageObj.stage} by ${officer_name} (${department}): "${comments}"`
+        : `Additional Documents Requested at Stage ${stageObj.stage} by ${officer_name} (${department}).`;
     } else if (determinedAction === "ESCALATE") {
       newStatus = application.status;
       newStep = `Escalated SLA - Under Review (${department})`;

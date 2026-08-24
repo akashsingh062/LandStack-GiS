@@ -280,12 +280,7 @@ export function getCurrentStageIndex(workflow: ServiceWorkflowDefinition, curren
   
   const lower = currentStep.toLowerCase();
 
-  // If already approved, certified, or completed -> return last stage
-  if (lower.includes("approved") || lower.includes("certified") || lower.includes("completed") || lower.includes("final")) {
-    return Math.max(0, workflow.stages.length - 1);
-  }
-
-  // 1. Prioritize explicit Stage number in step string: e.g. "Stage 4:" or "[Stage 4]"
+  // 1. Prioritize explicit Stage number in step string: e.g. "Stage 4:", "[Stage 4]", "at Stage 2"
   const stageMatch = currentStep.match(/Stage\s*(\d+)/i);
   if (stageMatch) {
     const stageNum = parseInt(stageMatch[1], 10);
@@ -297,7 +292,33 @@ export function getCurrentStageIndex(workflow: ServiceWorkflowDefinition, curren
   const nameIndex = workflow.stages.findIndex((s) => lower.includes(s.name.toLowerCase()));
   if (nameIndex >= 0) return nameIndex;
 
-  // 3. Fallback to department matching
+  // 3. If step specifies rejection by a specific department (e.g. "Rejected by Registration Department")
+  if (lower.includes("reject")) {
+    const rejectDeptIdx = workflow.stages.findIndex(
+      (s) => lower.includes(s.department.toLowerCase()) || lower.includes(s.deptCode.toLowerCase())
+    );
+    if (rejectDeptIdx >= 0) return rejectDeptIdx;
+  }
+
+  // 4. If step specifies action required / documentation requested by a specific department
+  if (lower.includes("action required") || lower.includes("requested")) {
+    const reqDeptIdx = workflow.stages.findIndex(
+      (s) => lower.includes(s.department.toLowerCase()) || lower.includes(s.deptCode.toLowerCase())
+    );
+    if (reqDeptIdx >= 0) return reqDeptIdx;
+  }
+
+  // 5. If already approved, certified, or completed (and NOT rejected) -> return last stage
+  if (
+    !lower.includes("reject") &&
+    (lower.includes("approved & certified") ||
+      lower.includes("all department clearances complete") ||
+      lower.includes("final statutory approval"))
+  ) {
+    return Math.max(0, workflow.stages.length - 1);
+  }
+
+  // 6. Fallback to department matching
   const deptIndex = workflow.stages.findIndex(
     (s) => lower.includes(s.department.toLowerCase()) || lower.includes(s.deptCode.toLowerCase())
   );

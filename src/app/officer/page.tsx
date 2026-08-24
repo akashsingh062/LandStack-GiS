@@ -804,10 +804,20 @@ export default function OfficerPortal() {
                           {workflow.stages.length} Stages)
                         </div>
                         <span
-                          className="badge badge-info"
+                          className={`badge ${
+                            app.status === "APPROVED" || app.status === "COMPLETED"
+                              ? "badge-success"
+                              : app.status === "REJECTED"
+                                ? "badge-error"
+                                : "badge-info"
+                          }`}
                           style={{ fontSize: 10 }}
                         >
-                          SLA: {workflow.totalSlaDays} Days
+                          {app.status === "APPROVED" || app.status === "COMPLETED"
+                            ? "✓ All Stages Approved"
+                            : app.status === "REJECTED"
+                              ? `✕ Rejected at Stage ${currentStageIdx + 1} (${workflow.stages[currentStageIdx]?.deptCode || app.department})`
+                              : `SLA: ${workflow.totalSlaDays} Days`}
                         </span>
                       </div>
 
@@ -1567,15 +1577,7 @@ export default function OfficerPortal() {
                     <strong style={{ color: "var(--text-primary)" }}>
                       {app.department}
                     </strong>{" "}
-                    for statutory scrutiny and sanction. You are authenticated as{" "}
-                    <strong>{currentUser?.name || "Official"}</strong> (
-                    <em>
-                      {currentUser?.department ||
-                        currentUser?.title ||
-                        currentUser?.role}
-                    </em>
-                    ). Verification, remark submission, and approval actions are
-                    restricted to designated officers of {app.department}.
+                    for statutory scrutiny and sanction.
                   </div>
                 </div>
               )}
