@@ -388,13 +388,6 @@ export default function OfficerPortal() {
           >
             ⚠️ {t("nav.conflicts")} ({3})
           </Link>
-          <Link
-            href="/admin/intelligence"
-            className="btn btn-primary"
-            style={{ fontSize: 12 }}
-          >
-            🧠 {t("nav.intelligence")}
-          </Link>
         </div>
       </motion.div>
 

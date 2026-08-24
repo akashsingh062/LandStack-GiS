@@ -23,7 +23,6 @@ function getLocalizedNavLabel(label: string, t: (k: string) => string): string {
   if (norm.includes("profile") || norm.includes("account")) return "My Profile";
   if (norm.includes("officer") || norm.includes("desk") || norm.includes("portal")) return t("nav.officer_desk");
   if (norm.includes("conflict") || norm.includes("dispute")) return t("nav.conflicts");
-  if (norm.includes("ai") || norm.includes("intelligence") || norm.includes("satellite")) return t("nav.intelligence");
   if (norm.includes("security") || norm.includes("audit")) return t("nav.security");
   if (norm.includes("adapter")) return t("nav.adapters");
   if (norm.includes("import")) return "Data Import";

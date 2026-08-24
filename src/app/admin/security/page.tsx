@@ -154,11 +154,11 @@ export default function SecurityAuditConsole() {
           <p className="page-subtitle">End-to-end zero-trust security: ABAC geographic authorization, immutable audit trail, DPDPA 2023 consent, and PII masking.</p>
         </div>
         <div style={{ display: "flex", gap: "var(--space-sm)" }}>
-          <Link href="/login" className="btn btn-outline" style={{ fontSize: 12 }}>
-            ⇄ Switch Role
+          <Link href="/admin" className="btn btn-outline" style={{ fontSize: 12 }}>
+            ← Admin Overview
           </Link>
-          <Link href="/admin/intelligence" className="btn btn-primary" style={{ fontSize: 12 }}>
-            🧠 AI Intelligence
+          <Link href="/login" className="btn btn-primary" style={{ fontSize: 12 }}>
+            ⇄ Switch Role
           </Link>
         </div>
       </div>

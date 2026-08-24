@@ -46,8 +46,7 @@ export async function POST(request: NextRequest) {
 
     // Determine Landing URL based on role
     let landingUrl = "/officer";
-    if (officer.role === "ADMIN") landingUrl = "/admin";
-    else if (officer.role === "SUPER_ADMIN") landingUrl = "/admin/intelligence";
+    if (officer.role === "ADMIN" || officer.role === "SUPER_ADMIN") landingUrl = "/admin";
     else if (officer.role === "AUDITOR") landingUrl = "/admin/security";
     else if (officer.department.includes("Registration"))
       landingUrl = "/officer?dept=Registration";

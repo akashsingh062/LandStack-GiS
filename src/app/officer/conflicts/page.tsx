@@ -19,7 +19,7 @@ export default function ConflictsPage() {
 
   const fetchConflicts = useCallback(async () => {
     try {
-      const url = severityFilter === "ALL" ? "/api/v1/ai/conflicts" : `/api/v1/ai/conflicts?severity=${severityFilter}`;
+      const url = severityFilter === "ALL" ? "/api/v1/conflicts" : `/api/v1/conflicts?severity=${severityFilter}`;
       const res = await apiClient.get(url);
       setConflicts(res.data.conflicts || []);
     } catch (err) {
@@ -33,7 +33,7 @@ export default function ConflictsPage() {
     let isMounted = true;
     const loadConflicts = async () => {
       try {
-        const url = severityFilter === "ALL" ? "/api/v1/ai/conflicts" : `/api/v1/ai/conflicts?severity=${severityFilter}`;
+        const url = severityFilter === "ALL" ? "/api/v1/conflicts" : `/api/v1/conflicts?severity=${severityFilter}`;
         const res = await apiClient.get(url);
         if (isMounted) setConflicts(res.data.conflicts || []);
       } catch (err) {
@@ -50,7 +50,7 @@ export default function ConflictsPage() {
 
   const resolveConflict = async (conflictId: string) => {
     try {
-      const res = await apiClient.patch("/api/v1/ai/conflicts", {
+      const res = await apiClient.patch("/api/v1/conflicts", {
         conflict_id: conflictId,
         resolved: true
       });
@@ -77,14 +77,11 @@ export default function ConflictsPage() {
             <span style={{ fontSize: 24 }}>⚠️</span>
             <h1 className="page-title">Cross-Department Data Conflict Resolution Center</h1>
           </div>
-          <p className="page-subtitle">AI-detected inconsistencies between Cadastral GIS, Jamabandi RoR, Sub-Registrar Deeds, and Master Plan zoning.</p>
+          <p className="page-subtitle">Automated statutory inconsistencies between Cadastral GIS, Jamabandi RoR, Sub-Registrar Deeds, and Master Plan zoning.</p>
         </div>
         <div style={{ display: "flex", gap: "var(--space-sm)" }}>
-          <Link href="/officer" className="btn btn-outline" style={{ fontSize: 12 }}>
+          <Link href="/officer" className="btn btn-primary" style={{ fontSize: 12 }}>
             ← Officer Inbox
-          </Link>
-          <Link href="/admin/intelligence" className="btn btn-primary" style={{ fontSize: 12 }}>
-            🧠 AI Intelligence
           </Link>
         </div>
       </div>

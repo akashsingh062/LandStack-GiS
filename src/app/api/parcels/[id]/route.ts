@@ -5,8 +5,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { withClient, query } from "@/lib/db";
-import { evaluateRules } from "@/lib/rules-engine";
-import { scoreParcelRisk } from "@/lib/ai/parcel-risk";
+import { evaluateRules, scoreParcelRisk } from "@/lib/rules-engine";
 import { normalizeArea } from "@/lib/adapters/unit-normalizer";
 
 interface DetailCacheEntry {
