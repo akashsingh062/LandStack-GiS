@@ -51,37 +51,47 @@ export default function ProfilePage() {
   };
 
   useEffect(() => {
-    if (currentUser) {
-      // Load active applications for this user
+    if (!currentUser) return;
+    let isMounted = true;
+
+    const loadProfileData = async () => {
+      // 1. Load active applications for citizen
       if (currentUser.role === "CITIZEN" && currentUser.phone) {
-        setLoadingApps(true);
-        apiClient
-          .get(
+        try {
+          const appRes = await apiClient.get(
             `/api/v1/applications?phone=${encodeURIComponent(currentUser.phone)}`,
-          )
-          .then((res) => {
-            if (res.data?.applications) {
-              setCitizenApps(res.data.applications);
-            }
-          })
-          .catch(() => setCitizenApps([]))
-          .finally(() => setLoadingApps(false));
+          );
+          if (isMounted && appRes.data?.applications) {
+            setCitizenApps(appRes.data.applications);
+          }
+        } catch {
+          if (isMounted) setCitizenApps([]);
+        } finally {
+          if (isMounted) setLoadingApps(false);
+        }
+      } else {
+        if (isMounted) setLoadingApps(false);
       }
 
-      // Load all land parcels owned by this citizen / owner
-      setLoadingParcels(true);
-      apiClient
-        .get(
-          `/api/v1/user/parcels?name=${encodeURIComponent(currentUser.name || "")}&phone=${encodeURIComponent(currentUser.phone || "")}`
-        )
-        .then((res) => {
-          if (res.data?.parcels) {
-            setUserParcels(res.data.parcels);
-          }
-        })
-        .catch(() => setUserParcels([]))
-        .finally(() => setLoadingParcels(false));
-    }
+      // 2. Load all land parcels owned by this citizen / owner
+      try {
+        const parcelRes = await apiClient.get(
+          `/api/v1/user/parcels?name=${encodeURIComponent(currentUser.name || "")}&phone=${encodeURIComponent(currentUser.phone || "")}`,
+        );
+        if (isMounted && parcelRes.data?.parcels) {
+          setUserParcels(parcelRes.data.parcels);
+        }
+      } catch {
+        if (isMounted) setUserParcels([]);
+      } finally {
+        if (isMounted) setLoadingParcels(false);
+      }
+    };
+
+    loadProfileData();
+    return () => {
+      isMounted = false;
+    };
   }, [currentUser]);
 
   const handleCopyUlpin = (ulpin: string) => {
