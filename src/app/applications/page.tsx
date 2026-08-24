@@ -89,30 +89,27 @@ export default function ApplicationsPage() {
   const currentRole = currentUser?.role || "CITIZEN";
 
   useEffect(() => {
-    if (!currentUser) {
-      setLoading(false);
-      return;
-    }
-
     let isMounted = true;
     const loadApps = async () => {
       try {
         setLoading(true);
         let url = "/api/v1/applications";
 
-        if (currentRole === "CITIZEN") {
-          const params = new URLSearchParams();
-          if (currentUser.phone) params.set("phone", currentUser.phone);
-          if (currentUser.name) params.set("applicant", currentUser.name);
-          url = `/api/v1/applications?${params.toString()}`;
-        } else if (currentRole === "REGISTRATION_OFFICER") {
-          url = "/api/v1/applications?department=Registration";
-        } else if (currentRole === "PLANNING_OFFICER") {
-          url = "/api/v1/applications?department=Planning";
-        } else if (currentRole === "TAX_OFFICER") {
-          url = "/api/v1/applications?department=Municipality";
-        } else if (currentRole === "REVENUE_OFFICER") {
-          url = "/api/v1/applications?department=Revenue";
+        if (currentUser) {
+          if (currentRole === "CITIZEN") {
+            const params = new URLSearchParams();
+            if (currentUser.phone) params.set("phone", currentUser.phone);
+            if (currentUser.name) params.set("applicant", currentUser.name);
+            url = `/api/v1/applications?${params.toString()}`;
+          } else if (currentRole === "REGISTRATION_OFFICER") {
+            url = "/api/v1/applications?department=Registration";
+          } else if (currentRole === "PLANNING_OFFICER") {
+            url = "/api/v1/applications?department=Planning";
+          } else if (currentRole === "TAX_OFFICER") {
+            url = "/api/v1/applications?department=Municipality";
+          } else if (currentRole === "REVENUE_OFFICER") {
+            url = "/api/v1/applications?department=Revenue";
+          }
         }
 
         const res = await apiClient.get(url);
@@ -159,42 +156,6 @@ export default function ApplicationsPage() {
     };
   }, [selectedId]);
 
-  // If user is not logged in, prompt to login
-  if (!currentUser) {
-    return (
-      <motion.div
-        className="app-content animate-in"
-        initial={{ opacity: 0, y: 14 }}
-        animate={{ opacity: 1, y: 0 }}
-        style={{ maxWidth: 640, margin: "32px auto" }}
-      >
-        <div className="card" style={{ textAlign: "center", padding: "var(--space-2xl)" }}>
-          <div style={{ width: 64, height: 64, borderRadius: "50%", background: "rgba(2, 132, 199, 0.1)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto var(--space-md)", color: "var(--brand-primary)" }}>
-            <Lucide.ShieldCheck size={32} />
-          </div>
-          <h2 style={{ fontSize: 20, fontWeight: 800, color: "var(--text-primary)", marginBottom: 8 }}>
-            Login Required to Track Applications
-          </h2>
-          <p style={{ fontSize: 13, color: "var(--text-secondary)", marginBottom: "var(--space-lg)", lineHeight: 1.6 }}>
-            Please log in with your registered Indian mobile number to track the live progress, department review notes, and certificate downloads for your land applications.
-          </p>
-          <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
-            <Link
-              href="/login?redirect=/applications"
-              className="btn btn-primary"
-              style={{ fontWeight: 700, padding: "10px 22px" }}
-            >
-              <span>🔑 Login to My Applications</span>
-            </Link>
-            <Link href="/" className="btn btn-secondary">
-              Go to Dashboard
-            </Link>
-          </div>
-        </div>
-      </motion.div>
-    );
-  }
-
   const app = selectedDetail?.application || applications.find((a) => a.application_no === selectedId);
   const history = selectedDetail?.history || [];
 
@@ -205,6 +166,40 @@ export default function ApplicationsPage() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, ease: "easeOut" }}
     >
+      {/* Guest Notice Banner */}
+      {!currentUser && (
+        <motion.div
+          initial={{ opacity: 0, y: -6 }}
+          animate={{ opacity: 1, y: 0 }}
+          style={{
+            background: "var(--bg-elevated)",
+            border: "1px solid var(--border-default)",
+            borderRadius: "var(--radius-md)",
+            padding: "12px 16px",
+            marginBottom: "var(--space-md)",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            flexWrap: "wrap",
+            gap: 12,
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <span style={{ fontSize: 20 }}>📋</span>
+            <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>
+              <strong style={{ color: "var(--text-primary)" }}>Public Application Tracker:</strong> You can view the live inter-departmental statutory workflow and SLA milestones for any public application below.
+            </div>
+          </div>
+          <Link
+            href="/login?redirect=/applications"
+            className="btn btn-primary"
+            style={{ fontSize: 12, padding: "6px 14px" }}
+          >
+            <span>🔑 Login / Sign Up</span>
+          </Link>
+        </motion.div>
+      )}
+
       <motion.div
         className="page-header"
         initial={{ opacity: 0, y: 10 }}
@@ -213,19 +208,23 @@ export default function ApplicationsPage() {
       >
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
-            <span style={{ fontSize: 24 }}>{currentRole === "CITIZEN" ? "📋" : "👨‍💼"}</span>
+            <span style={{ fontSize: 24 }}>{!currentUser ? "📋" : currentRole === "CITIZEN" ? "📋" : "👨‍💼"}</span>
             <h1 className="page-title">
-              {currentRole === "CITIZEN" ? t("apps.title") : `${currentUser?.department || "Department"} ${t("apps.title")}`}
+              {!currentUser ? t("apps.title") : currentRole === "CITIZEN" ? t("apps.title") : `${currentUser?.department || "Department"} ${t("apps.title")}`}
             </h1>
           </div>
           <p className="page-subtitle">
-            {currentRole === "CITIZEN"
-              ? `Real-time statutory tracking for ${currentUser.name} (${currentUser.phone || "Verified Citizen"})`
-              : `Departmental case queue for ${currentUser?.title || "Officer"} (${currentUser?.jurisdiction || "Bihar"})`}
+            {!currentUser
+              ? "Public statutory tracker: Inspect real-time multi-department clearance workflows and SLA milestones"
+              : currentRole === "CITIZEN"
+                ? `Real-time statutory tracking for ${currentUser.name} (${currentUser.phone || "Verified Citizen"})`
+                : `Departmental case queue for ${currentUser?.title || "Officer"} (${currentUser?.jurisdiction || "Bihar"})`}
           </p>
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          {currentRole === "CITIZEN" ? (
+          {!currentUser ? (
+            <Link href="/services" className="btn btn-primary">+ Apply for New Service</Link>
+          ) : currentRole === "CITIZEN" ? (
             <Link href="/services" className="btn btn-primary">+ Apply for New Service</Link>
           ) : (
             <Link href="/officer" className="btn btn-primary">Open Officer Desk →</Link>

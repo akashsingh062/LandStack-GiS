@@ -52,8 +52,8 @@ export const ALL_NAV_SECTIONS: NavSection[] = [
   {
     label: "Citizen Services",
     items: [
-      { href: "/services", icon: "ClipboardList", label: "Services", allowedRoles: ["CITIZEN"] },
-      { href: "/applications", icon: "FileText", label: "My Applications", allowedRoles: ["CITIZEN"] },
+      { href: "/services", icon: "ClipboardList", label: "Citizen Services", allowedRoles: ALL_ROLES },
+      { href: "/applications", icon: "FileText", label: "Track Applications", allowedRoles: ALL_ROLES },
     ],
   },
   {
@@ -81,9 +81,9 @@ export const ROUTE_ACCESS_RULES: { prefix: string; exact?: boolean; allowedRoles
   { prefix: "/map", allowedRoles: ALL_ROLES },
   { prefix: "/search", allowedRoles: ALL_ROLES },
   { prefix: "/parcel", allowedRoles: ALL_ROLES },
+  { prefix: "/services", allowedRoles: ALL_ROLES },
+  { prefix: "/applications", allowedRoles: ALL_ROLES },
   { prefix: "/", exact: true, allowedRoles: ALL_ROLES },
-  { prefix: "/services", allowedRoles: ["CITIZEN", "ADMIN", "SUPER_ADMIN"] },
-  { prefix: "/applications", allowedRoles: ["CITIZEN", "ADMIN", "SUPER_ADMIN"] },
   { prefix: "/officer/conflicts", allowedRoles: ["REVENUE_OFFICER", "PLANNING_OFFICER", "ADMIN", "SUPER_ADMIN", "AUDITOR"] },
   { prefix: "/officer", allowedRoles: OFFICER_ROLES },
   { prefix: "/admin/security", allowedRoles: ["ADMIN", "SUPER_ADMIN", "AUDITOR"] },
@@ -110,7 +110,7 @@ export function checkRouteAccess(pathname: string, role?: UserRole | null): {
   }
 
   // Public routes allowed for unauthenticated guests
-  const publicRoutes = ["/", "/login", "/map", "/search", "/parcel"];
+  const publicRoutes = ["/", "/login", "/map", "/search", "/parcel", "/services", "/applications"];
   const isPublic = publicRoutes.some(p => p === "/" ? pathname === "/" : pathname === p || pathname.startsWith(p + "/"));
 
   if (!role) {
@@ -147,7 +147,7 @@ export function checkRouteAccess(pathname: string, role?: UserRole | null): {
  */
 export function getFilteredNavSections(role?: UserRole | null): NavSection[] {
   if (!role) {
-    // Guest/Public: Only show public discovery links!
+    // Guest/Public: Can view discovery and public service trackers!
     return [
       {
         label: "Main",
@@ -155,6 +155,13 @@ export function getFilteredNavSections(role?: UserRole | null): NavSection[] {
           { href: "/", icon: "Home", label: "Dashboard", allowedRoles: ALL_ROLES },
           { href: "/map", icon: "Map", label: "GIS Map", allowedRoles: ALL_ROLES },
           { href: "/search", icon: "Search", label: "Search Land", allowedRoles: ALL_ROLES },
+        ],
+      },
+      {
+        label: "Citizen Services",
+        items: [
+          { href: "/services", icon: "ClipboardList", label: "Citizen Services", allowedRoles: ALL_ROLES },
+          { href: "/applications", icon: "FileText", label: "Track Applications", allowedRoles: ALL_ROLES },
         ],
       },
     ];
