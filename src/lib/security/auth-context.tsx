@@ -3,7 +3,10 @@
 import React, { createContext, useContext, useCallback, useSyncExternalStore } from "react";
 import { UserRole, UserType, Permission } from "./types";
 import { ROLE_PERMISSIONS } from "./rbac-matrix";
+import { UserPersona, DEMO_PERSONAS } from "./personas";
 import * as Lucide from "lucide-react";
+
+export { DEMO_PERSONAS, type UserPersona };
 
 export const getLucideIcon = (iconName: string) => {
   switch (iconName) {
@@ -23,16 +26,32 @@ export const getLucideIcon = (iconName: string) => {
   }
 };
 
-import { UserPersona, DEMO_PERSONAS } from "./personas";
-export { DEMO_PERSONAS, type UserPersona };
+export interface CitizenSignupPayload {
+  name: string;
+  phone: string;
+  email?: string;
+  state_code?: string;
+  district_code?: string;
+  circle_code?: string;
+  village_code?: string;
+}
 
 export interface AuthContextType {
   currentUser: UserPersona;
   allPersonas: UserPersona[];
   isMounted: boolean;
   loginAs: (roleOrId: string) => void;
-  loginWithOtp: (phone: string, code: string, fullName?: string) => Promise<{ success: boolean; error?: string }>;
-  loginOfficial: (officialIdOrEmail: string, password?: string) => Promise<{ success: boolean; error?: string }>;
+  signupCitizen: (payload: CitizenSignupPayload) => Promise<{ success: boolean; simulated_code?: string; error?: string }>;
+  loginWithOtp: (
+    phone: string,
+    code: string,
+    extra?: { fullName?: string; email?: string; district_code?: string; circle_code?: string; village_code?: string }
+  ) => Promise<{ success: boolean; error?: string; redirect_url?: string }>;
+  loginOfficial: (
+    officialIdOrEmail: string,
+    password?: string,
+    department?: string
+  ) => Promise<{ success: boolean; error?: string; redirect_url?: string }>;
   logout: () => void;
   hasPermission: (permission: Permission) => boolean;
   checkJurisdiction: (targetScope: { state_code?: string; district_code?: string; circle_code?: string }) => boolean;
@@ -68,7 +87,26 @@ function getAuthSnapshot(): UserPersona {
         (p) => p.id === parsed.id || p.officialId === parsed.officialId || p.role === parsed.role
       );
       if (match) {
-        cachedUserPersona = match;
+        cachedUserPersona = { ...match, ...parsed };
+      } else {
+        cachedUserPersona = {
+          id: parsed.id || "CITIZEN_CUSTOM",
+          officialId: parsed.officialId || "CITIZEN-001",
+          name: parsed.name || "Citizen User",
+          role: parsed.role || "CITIZEN",
+          userType: parsed.userType || "CITIZEN",
+          title: parsed.title || "Citizen / Land Owner",
+          department: parsed.department || "Public Citizen Portal",
+          icon: "User",
+          jurisdiction: parsed.jurisdiction || "Bihar",
+          stateCode: parsed.stateCode || "BR",
+          districtCode: parsed.districtCode || "BR-10",
+          circleCode: parsed.circleCode || "Basopatti",
+          description: "Registered Citizen User",
+          landingUrl: parsed.landingUrl || "/",
+          email: parsed.email || "",
+          phone: parsed.phone || "",
+        };
       }
     } else if (!raw) {
       cachedUserPersona = DEMO_PERSONAS[0];
@@ -95,6 +133,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const currentUser = useSyncExternalStore(subscribeToAuth, getAuthSnapshot, getAuthServerSnapshot);
   const isMounted = useSyncExternalStore(subscribeToMounted, getMountedSnapshot, getMountedServerSnapshot);
 
+  const saveUserSession = useCallback((userObj: UserPersona) => {
+    try {
+      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(userObj));
+      localStorage.setItem("landstack_user", JSON.stringify(userObj));
+      document.cookie = `landstack_role=${userObj.role}; path=/; max-age=86400; SameSite=Lax`;
+      cachedUserJson = JSON.stringify(userObj);
+      cachedUserPersona = userObj;
+      window.dispatchEvent(new CustomEvent(AUTH_EVENT_NAME, { detail: userObj }));
+    } catch (e) {
+      console.warn("Auth save error:", e);
+    }
+  }, []);
+
   const loginAs = useCallback((roleOrId: string) => {
     const match = DEMO_PERSONAS.find(
       (p) =>
@@ -104,108 +155,167 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         p.email.toLowerCase() === roleOrId.toLowerCase()
     ) || DEMO_PERSONAS[0];
 
-    try {
-      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(match));
-      localStorage.setItem("landstack_user", JSON.stringify(match));
-      document.cookie = `landstack_role=${match.role}; path=/; max-age=86400; SameSite=Lax`;
-      cachedUserJson = JSON.stringify(match);
-      cachedUserPersona = match;
+    saveUserSession(match);
+  }, [saveUserSession]);
 
-      // Broadcast event to other listeners
-      window.dispatchEvent(new CustomEvent(AUTH_EVENT_NAME, { detail: match }));
-    } catch (e) {
-      console.warn("Auth save error:", e);
-    }
-  }, []);
-
-  const loginWithOtp = useCallback(async (phone: string, code: string, fullName?: string) => {
+  const signupCitizen = useCallback(async (payload: CitizenSignupPayload) => {
     try {
-      const res = await fetch("/api/v1/auth/otp/verify", {
+      const res = await fetch("/api/v1/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone, code, fullName }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (!res.ok) {
-        return { success: false, error: data.error || "Verification failed" };
+        return { success: false, error: data.error || "Signup failed" };
       }
-
-      // Activate Citizen Persona
-      const citizen = DEMO_PERSONAS[0];
-      const citizenSession = {
-        ...citizen,
-        name: fullName?.trim() || citizen.name,
-        phone: data.user?.phone || phone,
-      };
-
-      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(citizenSession));
-      localStorage.setItem("landstack_user", JSON.stringify(citizenSession));
-      document.cookie = `landstack_role=CITIZEN; path=/; max-age=86400; SameSite=Lax`;
-      cachedUserJson = JSON.stringify(citizenSession);
-      cachedUserPersona = citizenSession;
-      window.dispatchEvent(new CustomEvent(AUTH_EVENT_NAME, { detail: citizenSession }));
-
-      return { success: true };
-    } catch (err) {
-      return { success: false, error: "Network error during OTP verification" };
+      return { success: true, simulated_code: data.simulated_code };
+    } catch {
+      return { success: false, error: "Network error during citizen signup" };
     }
   }, []);
 
-  const loginOfficial = useCallback(async (officialIdOrEmail: string, password?: string) => {
-    try {
-      const res = await fetch("/api/v1/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ official_id: officialIdOrEmail, email: officialIdOrEmail, password }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        return { success: false, error: data.error || "Official authentication failed" };
-      }
+  const loginWithOtp = useCallback(
+    async (
+      phone: string,
+      code: string,
+      extra?: { fullName?: string; email?: string; district_code?: string; circle_code?: string; village_code?: string }
+    ) => {
+      try {
+        const res = await fetch("/api/v1/auth/otp/verify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            phone,
+            code,
+            fullName: extra?.fullName,
+            email: extra?.email,
+            district_code: extra?.district_code,
+            circle_code: extra?.circle_code,
+            village_code: extra?.village_code,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          return { success: false, error: data.error || "Verification failed" };
+        }
 
-      loginAs(data.user?.id || officialIdOrEmail);
-      return { success: true };
-    } catch (err) {
-      return { success: false, error: "Network error during official login" };
-    }
-  }, [loginAs]);
+        const citizenSession: UserPersona = {
+          id: data.user?.id || `citizen_${phone.slice(-10)}`,
+          officialId: data.user?.officialId || `CITIZEN-${phone.slice(-4)}`,
+          name: data.user?.name || extra?.fullName || "Citizen User",
+          role: "CITIZEN",
+          userType: "CITIZEN",
+          title: "Citizen / Land Owner",
+          department: "Public Citizen Portal",
+          icon: "User",
+          jurisdiction: data.user?.jurisdiction || "Basopatti, Madhubani (Bihar)",
+          stateCode: data.user?.stateCode || "BR",
+          districtCode: data.user?.districtCode || "BR-10",
+          circleCode: data.user?.circleCode || "Basopatti",
+          description: "Registered Citizen User",
+          landingUrl: "/",
+          email: data.user?.email || "",
+          phone: data.user?.phone || phone,
+        };
+
+        saveUserSession(citizenSession);
+        return { success: true, redirect_url: "/" };
+      } catch {
+        return { success: false, error: "Network error during OTP verification" };
+      }
+    },
+    [saveUserSession]
+  );
+
+  const loginOfficial = useCallback(
+    async (officialIdOrEmail: string, password?: string, department?: string) => {
+      try {
+        const res = await fetch("/api/v1/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            department,
+            official_id: officialIdOrEmail,
+            email: officialIdOrEmail,
+            password: password || "sih@2026",
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          return { success: false, error: data.error || "Official authentication failed" };
+        }
+
+        const officerSession: UserPersona = {
+          id: data.user?.id || officialIdOrEmail,
+          officialId: data.user?.officialId || officialIdOrEmail,
+          name: data.user?.name || "Official Officer",
+          role: data.user?.role || "REVENUE_OFFICER",
+          userType: "STAFF",
+          title: data.user?.title || "Department Officer",
+          department: data.user?.department || "Department",
+          icon: "Briefcase",
+          jurisdiction: data.user?.jurisdiction || "State of Bihar",
+          stateCode: data.user?.stateCode || "BR",
+          districtCode: data.user?.districtCode || "ALL",
+          circleCode: data.user?.circleCode || "ALL",
+          description: data.user?.department || "Official Staff",
+          landingUrl: data.user?.landingUrl || "/officer",
+          email: data.user?.email || "",
+          phone: data.user?.phone || "",
+        };
+
+        saveUserSession(officerSession);
+        return { success: true, redirect_url: data.redirect_url || officerSession.landingUrl };
+      } catch {
+        return { success: false, error: "Network error during official login" };
+      }
+    },
+    [saveUserSession]
+  );
 
   const logout = useCallback(() => {
     const citizen = DEMO_PERSONAS[0];
-    loginAs(citizen.id);
-  }, [loginAs]);
+    saveUserSession(citizen);
+  }, [saveUserSession]);
 
-  const hasPermission = useCallback((permission: Permission): boolean => {
-    const allowed = (ROLE_PERMISSIONS as Record<string, Permission[]>)[currentUser.role] || [];
-    return allowed.includes(permission);
-  }, [currentUser.role]);
+  const hasPermission = useCallback(
+    (permission: Permission): boolean => {
+      const allowed = (ROLE_PERMISSIONS as Record<string, Permission[]>)[currentUser.role] || [];
+      return allowed.includes(permission);
+    },
+    [currentUser.role]
+  );
 
-  const checkJurisdiction = useCallback((targetScope: { state_code?: string; district_code?: string; circle_code?: string }): boolean => {
-    if (currentUser.role === "ADMIN" || currentUser.role === "SUPER_ADMIN" || currentUser.stateCode === "ALL") {
+  const checkJurisdiction = useCallback(
+    (targetScope: { state_code?: string; district_code?: string; circle_code?: string }): boolean => {
+      if (currentUser.role === "ADMIN" || currentUser.role === "SUPER_ADMIN" || currentUser.stateCode === "ALL") {
+        return true;
+      }
+      if (targetScope.state_code && targetScope.state_code !== "*" && targetScope.state_code !== currentUser.stateCode) {
+        return false;
+      }
+      if (
+        targetScope.district_code &&
+        targetScope.district_code !== "*" &&
+        currentUser.districtCode !== "ALL" &&
+        targetScope.district_code.toLowerCase() !== currentUser.districtCode.toLowerCase()
+      ) {
+        return false;
+      }
+      if (
+        currentUser.role === "REVENUE_OFFICER" &&
+        targetScope.circle_code &&
+        targetScope.circle_code !== "*" &&
+        currentUser.circleCode !== "ALL" &&
+        targetScope.circle_code.toLowerCase() !== currentUser.circleCode.toLowerCase()
+      ) {
+        return false;
+      }
       return true;
-    }
-    if (targetScope.state_code && targetScope.state_code !== "*" && targetScope.state_code !== currentUser.stateCode) {
-      return false;
-    }
-    if (
-      targetScope.district_code &&
-      targetScope.district_code !== "*" &&
-      currentUser.districtCode !== "ALL" &&
-      targetScope.district_code.toLowerCase() !== currentUser.districtCode.toLowerCase()
-    ) {
-      return false;
-    }
-    if (
-      currentUser.role === "REVENUE_OFFICER" &&
-      targetScope.circle_code &&
-      targetScope.circle_code !== "*" &&
-      currentUser.circleCode !== "ALL" &&
-      targetScope.circle_code.toLowerCase() !== currentUser.circleCode.toLowerCase()
-    ) {
-      return false;
-    }
-    return true;
-  }, [currentUser]);
+    },
+    [currentUser]
+  );
 
   const getInitials = useCallback((name: string): string => {
     if (!name) return "US";
@@ -223,6 +333,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         allPersonas: DEMO_PERSONAS,
         isMounted,
         loginAs,
+        signupCitizen,
         loginWithOtp,
         loginOfficial,
         logout,

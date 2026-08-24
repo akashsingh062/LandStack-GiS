@@ -1,56 +1,72 @@
 /**
  * POST /api/v1/auth/login
- * Official Department Login — Validates Official ID / Email, checks RBAC & Jurisdiction, issues session
+ * Department Official Login (SIH 2026 PS #26014)
+ * Validates Department selection, Official ID, and Common Staff Password (sih@2026) against Database
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { DEMO_PERSONAS } from "@/lib/security/personas";
+import { validateStaffLogin, DEPARTMENTS } from "@/lib/security/user-store";
 import { ROLE_PERMISSIONS } from "@/lib/security/rbac-matrix";
+import { UserRole } from "@/lib/security/types";
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const identifier = (body.official_id || body.officialId || body.email || body.id || "").trim();
+    const department = body.department?.trim();
+    const officialId = (body.official_id || body.officialId || body.email || body.id || "").trim();
+    const password = body.password?.trim();
 
-    if (!identifier) {
+    if (!officialId) {
       return NextResponse.json(
-        { error: "Official ID or Official Email is required." },
+        { error: "Official Employee ID or Government Email is required." },
         { status: 400 }
       );
     }
 
-    // Match against provisioned government accounts
-    const persona = DEMO_PERSONAS.find(
-      (p) =>
-        p.officialId.toLowerCase() === identifier.toLowerCase() ||
-        p.email.toLowerCase() === identifier.toLowerCase() ||
-        p.id.toLowerCase() === identifier.toLowerCase() ||
-        p.role.toLowerCase() === identifier.toLowerCase()
-    );
+    // Validate with common staff password 'sih@2026' and database lookup
+    const result = await validateStaffLogin({
+      department,
+      official_id: officialId,
+      password,
+    });
 
-    if (!persona) {
+    if (!result.success || !result.user) {
       return NextResponse.json(
         {
-          error: "Invalid Official ID or unauthorized access. Government accounts must be pre-provisioned by the State Administrator.",
+          error:
+            result.error ||
+            "Authentication failed. Please verify your Department, Official ID, and Password (sih@2026).",
         },
         { status: 401 }
       );
     }
 
+    const officer = result.user;
+    const permissions = ROLE_PERMISSIONS[officer.role as UserRole] || [];
+
+    // Determine Landing URL based on role
+    let landingUrl = "/officer";
+    if (officer.role === "ADMIN") landingUrl = "/admin";
+    else if (officer.role === "SUPER_ADMIN") landingUrl = "/admin/intelligence";
+    else if (officer.role === "AUDITOR") landingUrl = "/admin/security";
+    else if (officer.department.includes("Registration")) landingUrl = "/officer?dept=Registration";
+    else if (officer.department.includes("Planning")) landingUrl = "/officer?dept=Planning";
+    else if (officer.department.includes("Tax") || officer.department.includes("Municipality")) landingUrl = "/officer?dept=Municipality";
+
     const token = Buffer.from(
       JSON.stringify({
-        sub: persona.id,
-        official_id: persona.officialId,
-        email: persona.email,
-        name: persona.name,
-        role: persona.role,
-        user_type: persona.userType,
-        department: persona.department,
-        jurisdiction: persona.jurisdiction,
-        state_code: persona.stateCode,
-        district_code: persona.districtCode,
-        circle_code: persona.circleCode,
-        permissions: ROLE_PERMISSIONS[persona.role],
+        sub: officer.username,
+        official_id: officer.official_id,
+        email: officer.email,
+        name: officer.name,
+        role: officer.role,
+        user_type: "STAFF",
+        department: officer.department,
+        jurisdiction: officer.jurisdiction,
+        state_code: officer.state_code,
+        district_code: officer.district_code,
+        circle_code: officer.circle_code,
+        permissions,
         iat: Date.now(),
         exp: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
       })
@@ -58,24 +74,27 @@ export async function POST(request: NextRequest) {
 
     const response = NextResponse.json({
       success: true,
-      message: `Authentication successful. Welcome, ${persona.name}.`,
+      message: `Authentication successful. Welcome, ${officer.name}.`,
       token,
       user: {
-        id: persona.id,
-        official_id: persona.officialId,
-        name: persona.name,
-        role: persona.role,
-        user_type: persona.userType,
-        title: persona.title,
-        department: persona.department,
-        jurisdiction: persona.jurisdiction,
-        landing_url: persona.landingUrl,
+        id: officer.username,
+        officialId: officer.official_id,
+        name: officer.name,
+        role: officer.role,
+        userType: "STAFF",
+        title: officer.title,
+        department: officer.department,
+        jurisdiction: officer.jurisdiction,
+        stateCode: officer.state_code,
+        districtCode: officer.district_code,
+        circleCode: officer.circle_code,
+        landingUrl,
       },
-      permissions: ROLE_PERMISSIONS[persona.role],
-      redirect_url: persona.landingUrl,
+      permissions,
+      redirect_url: landingUrl,
     });
 
-    response.cookies.set("landstack_role", persona.role, {
+    response.cookies.set("landstack_role", officer.role, {
       path: "/",
       maxAge: 24 * 60 * 60,
       sameSite: "lax",
@@ -83,30 +102,19 @@ export async function POST(request: NextRequest) {
 
     return response;
   } catch (error: unknown) {
-    const msg = error instanceof Error ? error.message : "Authentication error";
+    const msg = error instanceof Error ? error.message : "Official authentication error";
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
 
 /**
  * GET /api/v1/auth/login
- * Returns available government official personas for SIH evaluation demonstration
+ * Returns available departments for the official login dropdown
  */
 export async function GET() {
   return NextResponse.json({
-    official_roles: DEMO_PERSONAS.filter((p) => p.userType === "STAFF").map((p) => ({
-      official_id: p.officialId,
-      name: p.name,
-      role: p.role,
-      title: p.title,
-      department: p.department,
-      jurisdiction: p.jurisdiction,
-      landing_url: p.landingUrl,
-    })),
-    citizen_portal: {
-      auth_type: "MOBILE_OTP_SIMULATED",
-      default_citizen: DEMO_PERSONAS[0],
-    },
-    note: "LandStack SIH 2026 Authentication API. Government accounts require Official ID. Public signup is restricted to Citizens.",
+    departments: DEPARTMENTS,
+    staff_password_hint: "Default Hackathon Staff Password: sih@2026",
+    note: "Official accounts require Department selection and pre-provisioned Official ID.",
   });
 }
