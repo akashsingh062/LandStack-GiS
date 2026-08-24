@@ -121,7 +121,6 @@ export async function POST(request: NextRequest) {
 export async function GET() {
   return NextResponse.json({
     departments: DEPARTMENTS,
-    staff_password_hint: "Default Hackathon Staff Password: ",
     note: "Official accounts require Department selection and pre-provisioned Official ID.",
   });
 }

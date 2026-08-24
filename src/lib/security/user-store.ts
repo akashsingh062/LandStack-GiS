@@ -25,10 +25,9 @@ function getPool(): Pool {
 
 import {
   DEPARTMENTS,
-  COMMON_STAFF_PASSWORD,
   DepartmentOption,
 } from "./departments";
-export { DEPARTMENTS, COMMON_STAFF_PASSWORD, type DepartmentOption };
+export { DEPARTMENTS, type DepartmentOption };
 
 export interface DbUser {
   user_id?: string;
@@ -187,7 +186,7 @@ export async function registerOrUpdateCitizen(
 }
 
 /**
- * Validate staff login with department selection and common password
+ * Validate staff login strictly from database table audit.users
  */
 export async function validateStaffLogin(params: {
   department?: string;
@@ -203,43 +202,47 @@ export async function validateStaffLogin(params: {
     };
   }
 
-  // Check common password:  (or bypass in dev if empty)
-  const isPasswordValid =
-    password === COMMON_STAFF_PASSWORD ||
-    password === "••••••••" ||
-    (process.env.NODE_ENV !== "production" &&
-      (!password || password === "admin" || password === "password"));
+  if (!password) {
+    return {
+      success: false,
+      error: "Department password is required.",
+    };
+  }
+
+  const clean = official_id.trim().toLowerCase();
+  const pool = getPool();
+
+  let user: (DbUser & { password_hash?: string }) | null = null;
+  try {
+    const res = await pool.query(
+      `SELECT * FROM audit.users 
+       WHERE (LOWER(official_id) = $1 OR LOWER(email) = $1 OR LOWER(username) = $1)
+         AND user_type = 'STAFF'
+       LIMIT 1`,
+      [clean]
+    );
+    if (res.rows.length > 0) {
+      user = res.rows[0];
+    }
+  } catch (err) {
+    console.error("DB lookup error in validateStaffLogin:", err);
+  }
+
+  if (!user) {
+    return {
+      success: false,
+      error: `Official ID '${official_id}' is not provisioned in the Land Governance directory.`,
+    };
+  }
+
+  // Verify password strictly against stored database hash
+  const storedHash = user.password_hash;
+  const isPasswordValid = storedHash ? password === storedHash : false;
 
   if (!isPasswordValid) {
     return {
       success: false,
-      error: "Invalid password. Department password is required.",
-    };
-  }
-
-  const user = await getOfficialByIdOrEmail(official_id);
-
-  if (!user) {
-    // If not found in DB by exact ID, find by department code match
-    const deptMatch = DEPARTMENTS.find(
-      (d) =>
-        d.id === department ||
-        d.name.toLowerCase() === department?.toLowerCase() ||
-        d.code.toLowerCase() === official_id.split("-")[0]?.toLowerCase(),
-    );
-
-    if (deptMatch) {
-      const fallbackOfficial = await getOfficialByIdOrEmail(
-        deptMatch.defaultOfficerId,
-      );
-      if (fallbackOfficial) {
-        return { success: true, user: fallbackOfficial };
-      }
-    }
-
-    return {
-      success: false,
-      error: `Official ID '${official_id}' is not provisioned in the Land Governance directory.`,
+      error: "Invalid official password. Please verify your department credentials.",
     };
   }
 

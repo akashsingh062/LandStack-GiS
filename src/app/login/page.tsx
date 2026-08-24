@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/security/auth-context";
-import { DEPARTMENTS, COMMON_STAFF_PASSWORD } from "@/lib/security/departments";
+import { DEPARTMENTS } from "@/lib/security/departments";
 import { useLanguage } from "@/lib/i18n/language-context";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import * as Lucide from "lucide-react";
@@ -43,6 +43,7 @@ function LoginPageContent() {
     "",
   ]);
   const [simulatedOtp, setSimulatedOtp] = useState<string | null>("483921");
+  const [copiedOtp, setCopiedOtp] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
   const [otpLoading, setOtpLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
@@ -51,9 +52,7 @@ function LoginPageContent() {
   // Official Staff States
   const [selectedDeptId, setSelectedDeptId] = useState("revenue");
   const [officialId, setOfficialId] = useState("REV-001");
-  const [officialPassword, setOfficialPassword] = useState(
-    COMMON_STAFF_PASSWORD,
-  );
+  const [officialPassword, setOfficialPassword] = useState("");
   const [officialLoading, setOfficialLoading] = useState(false);
   const [officialError, setOfficialError] = useState<string | null>(null);
 
@@ -159,6 +158,16 @@ function LoginPageContent() {
     if (e.key === "Backspace" && !otpDigits[index] && index > 0) {
       otpInputsRef.current[index - 1]?.focus();
     }
+  };
+
+  // Copy simulated OTP to clipboard
+  const handleCopyOtp = () => {
+    if (!simulatedOtp) return;
+    if (typeof navigator !== "undefined" && navigator.clipboard) {
+      navigator.clipboard.writeText(simulatedOtp);
+    }
+    setCopiedOtp(true);
+    setTimeout(() => setCopiedOtp(false), 2000);
   };
 
   // 1-Click Auto Fill simulated OTP
@@ -975,20 +984,35 @@ function LoginPageContent() {
                         </div>
                       </div>
                       <button
-                        onClick={handleAutoFillOtp}
+                        type="button"
+                        onClick={handleCopyOtp}
                         style={{
-                          background: "#16a34a",
+                          background: copiedOtp ? "#047857" : "#16a34a",
                           color: "#ffffff",
                           border: "none",
-                          padding: "6px 12px",
+                          padding: "6px 14px",
                           borderRadius: 6,
                           fontSize: 11,
                           fontWeight: 700,
                           cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 6,
                           boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+                          transition: "all 0.15s ease",
                         }}
                       >
-                        1-Click Auto Fill
+                        {copiedOtp ? (
+                          <>
+                            <Lucide.Check size={13} />
+                            <span>Copied!</span>
+                          </>
+                        ) : (
+                          <>
+                            <Lucide.Copy size={13} />
+                            <span>Copy OTP</span>
+                          </>
+                        )}
                       </button>
                     </div>
                   )}
