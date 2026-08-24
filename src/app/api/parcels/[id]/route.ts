@@ -6,6 +6,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withClient } from "@/lib/db";
 import { evaluateRules } from "@/lib/rules-engine";
+import { scoreParcelRisk } from "@/lib/ai/parcel-risk";
+import { normalizeArea } from "@/lib/adapters/unit-normalizer";
 
 interface DetailCacheEntry {
   data: any;
@@ -67,8 +69,10 @@ export async function GET(
       const encumbrances = await client.query(`SELECT encumbrance_id, encumbrance_type, institution, reference_number, amount, outstanding, interest_rate, status, start_date, end_date FROM governance.encumbrances WHERE parcel_id = $1::uuid`, [parcelUuid]);
       const buildingPerms = await client.query(`SELECT permission_id, application_number, applicant, building_type, approved_area, floors, application_date, approval_date, status FROM governance.building_permissions WHERE parcel_id = $1::uuid`, [parcelUuid]);
       const tax = await client.query(`SELECT tax_id, assessment_year, tax_amount, paid_amount, due_amount, arrears, status FROM governance.property_tax WHERE parcel_id = $1::uuid ORDER BY assessment_year DESC LIMIT 3`, [parcelUuid]);
+      const mutations = await client.query(`SELECT status, mutation_date, created_at FROM land.mutations WHERE parcel_id = $1::uuid AND UPPER(COALESCE(status, 'PENDING')) NOT IN ('APPROVED', 'REJECTED', 'COMPLETED', 'CLOSED') ORDER BY COALESCE(mutation_date, created_at::date) ASC LIMIT 1`, [parcelUuid]);
       const disputes = await client.query(`SELECT dispute_id, dispute_type, case_number, court, petitioner, respondent, status, stay_order, affects_transfer, filing_date, next_hearing FROM governance.disputes WHERE parcel_id = $1::uuid`, [parcelUuid]);
       const conflicts = await client.query(`SELECT conflict_id, conflict_type, severity, source_a, value_a, source_b, value_b, resolved FROM land.data_conflicts WHERE parcel_id = $1::uuid`, [parcelUuid]);
+      const duplicateIdentifiers = await client.query(`SELECT EXISTS (SELECT 1 FROM gis.parcel_identifiers current_id JOIN gis.parcel_identifiers other_id ON current_id.identifier_type = other_id.identifier_type AND current_id.identifier_value = other_id.identifier_value AND current_id.parcel_id <> other_id.parcel_id WHERE current_id.parcel_id = $1::uuid) AS has_duplicate`, [parcelUuid]);
       const matchInfo = await client.query(`SELECT source_system, match_method, match_score, area_diff_pct, status FROM integration.parcel_matches WHERE parcel_id = $1::uuid`, [parcelUuid]);
       const landUse = await client.query(`SELECT lu.zone_id, lu.zone_code, lu.zone_name FROM gis.land_use_zones lu WHERE ST_Intersects(lu.geom, (SELECT geom FROM gis.parcels WHERE parcel_id = $1::uuid))`, [parcelUuid]);
       const masterPlan = await client.query(`SELECT mp.zone_id, mp.zone_code, mp.zone_name, mp.permitted_use, mp.max_far, mp.max_height_m FROM gis.master_plan_zones mp WHERE ST_Intersects(mp.geom, (SELECT geom FROM gis.parcels WHERE parcel_id = $1::uuid))`, [parcelUuid]);
@@ -83,6 +87,45 @@ export async function GET(
       buildingPermissions: buildingPerms.rows.map((r: { status: string; approval_date: string }) => ({ status: r.status, expiry_date: r.approval_date })),
       disputes: disputes.rows.map((r: { status: string }) => ({ status: r.status })),
       ror: ror.rows[0] ? { revenue_status: ror.rows[0].revenue_status } : null,
+    });
+
+    const unresolvedConflicts = conflicts.rows.filter((conflict: { resolved: boolean }) => !conflict.resolved);
+    const hasConflict = (...types: string[]) => unresolvedConflicts.some((conflict: { conflict_type?: string }) =>
+      types.includes((conflict.conflict_type || "").toUpperCase()),
+    );
+    const pendingMutation = mutations.rows[0];
+    const pendingMutationDays = pendingMutation
+      ? Math.max(0, Math.floor((Date.now() - new Date(pendingMutation.mutation_date || pendingMutation.created_at).getTime()) / 86400000))
+      : 0;
+    const hasActiveEncumbrance = encumbrances.rows.some((encumbrance: { status?: string }) =>
+      (encumbrance.status || "").toUpperCase() === "ACTIVE",
+    );
+    const hasDisputedEncumbrance = encumbrances.rows.some((encumbrance: { status?: string }) =>
+      (encumbrance.status || "").toUpperCase() === "DISPUTED",
+    );
+    const cadastralAreaSqm = parcel.area == null ? null : normalizeArea(parcel.area, parcel.area_unit).area_sq_m;
+    const rorAreaSqm = ror.rows[0]?.area == null
+      ? null
+      : normalizeArea(ror.rows[0].area, ror.rows[0].area_unit).area_sq_m;
+    const taxArrearsYears = tax.rows.length === 0
+      ? null
+      : tax.rows.filter((taxRecord: { due_amount?: number; arrears?: number; status?: string }) =>
+        Number(taxRecord.due_amount || 0) > 0 || Number(taxRecord.arrears || 0) > 0 || (taxRecord.status || "").toUpperCase() === "PENDING",
+      ).length;
+    const riskEvaluation = scoreParcelRisk({
+      parcelId: parcel.ulpin || String(parcel.parcel_id),
+      cadastralAreaSqm,
+      rorAreaSqm,
+      ownerMatch: hasConflict("OWNERSHIP_MISMATCH", "OWNER_NAME_MISMATCH")
+        ? false
+        : ownership.rows.length > 0 && registrations.rows.length > 0
+          ? true
+          : null,
+      mutationPendingDays: pendingMutationDays,
+      encumbrance: hasDisputedEncumbrance ? "disputed" : hasActiveEncumbrance ? "active" : "none",
+      taxArrearsYears,
+      landUseViolation: hasConflict("LAND_USE_VIOLATION", "UNAUTHORIZED_DEVELOPMENT"),
+      duplicateIdentifier: Boolean(duplicateIdentifiers.rows[0]?.has_duplicate),
     });
 
     const layersConnected = [
@@ -112,6 +155,7 @@ export async function GET(
           restrictions: restrictions.rows,
         },
         rules_evaluation: rulesResult,
+        risk_evaluation: riskEvaluation,
         conflicts: conflicts.rows,
         integration: {
           matches: matchInfo.rows,
