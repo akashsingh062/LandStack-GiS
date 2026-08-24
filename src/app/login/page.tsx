@@ -140,15 +140,64 @@ function LoginPageContent() {
     }
   };
 
-  // Handle individual OTP box typing
+  // Handle individual OTP box typing or multi-character paste
   const handleOtpDigitChange = (index: number, value: string) => {
-    const val = value.slice(-1).replace(/\D/g, "");
+    const rawVal = value.replace(/\D/g, "");
+    if (!rawVal) {
+      const newDigits = [...otpDigits];
+      newDigits[index] = "";
+      setOtpDigits(newDigits);
+      return;
+    }
+
+    // If multiple digits were pasted/entered into this box
+    if (rawVal.length > 1) {
+      const digits = rawVal.slice(0, 6).split("");
+      const newDigits = [...otpDigits];
+      digits.forEach((digit, i) => {
+        if (index + i < 6) {
+          newDigits[index + i] = digit;
+        }
+      });
+      setOtpDigits(newDigits);
+      const nextIndex = Math.min(index + digits.length, 5);
+      otpInputsRef.current[nextIndex]?.focus();
+      if (newDigits.every((d) => d !== "") && newDigits.join("").length === 6) {
+        handleVerifyOtp(newDigits.join(""));
+      }
+      return;
+    }
+
+    const val = rawVal.slice(-1);
     const newDigits = [...otpDigits];
     newDigits[index] = val;
     setOtpDigits(newDigits);
 
     if (val && index < 5) {
       otpInputsRef.current[index + 1]?.focus();
+    }
+  };
+
+  // Dedicated clipboard paste handler for OTP inputs
+  const handleOtpPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const pastedData = e.clipboardData.getData("text").replace(/\D/g, "");
+    if (!pastedData) return;
+
+    const digits = pastedData.slice(0, 6).split("");
+    const newDigits = ["", "", "", "", "", ""];
+    digits.forEach((digit, i) => {
+      if (i < 6) {
+        newDigits[i] = digit;
+      }
+    });
+    setOtpDigits(newDigits);
+
+    const focusIndex = Math.min(digits.length, 5);
+    otpInputsRef.current[focusIndex]?.focus();
+
+    if (digits.length === 6) {
+      handleVerifyOtp(digits.join(""));
     }
   };
 
@@ -934,11 +983,14 @@ function LoginPageContent() {
                           otpInputsRef.current[idx] = el;
                         }}
                         type="text"
-                        maxLength={1}
+                        inputMode="numeric"
+                        autoComplete="one-time-code"
+                        maxLength={6}
                         value={digit}
                         onChange={(e) =>
                           handleOtpDigitChange(idx, e.target.value)
                         }
+                        onPaste={handleOtpPaste}
                         onKeyDown={(e) => handleOtpKeyDown(idx, e)}
                         style={{
                           width: 44,
