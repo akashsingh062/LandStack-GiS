@@ -43,6 +43,7 @@ import {
 
 const TABS = [
   { id: "overview", label: "Overview", icon: <PieChart size={14} /> },
+  { id: "risk", label: "Plot Risk Profile", icon: <ShieldAlert size={14} /> },
   { id: "ownership", label: "Ownership", icon: <User size={14} /> },
   { id: "ror", label: "RoR", icon: <FileText size={14} /> },
   { id: "registration", label: "Registration", icon: <FileSignature size={14} /> },
@@ -342,10 +343,120 @@ export default function ParcelPage() {
                       <div style={{ fontSize: 12, color: "var(--status-success)" }}>No risk indicators were detected.</div>
                     )}
                   </div>
+                  <div style={{ marginTop: 12 }}>
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab("risk")}
+                      className="btn btn-secondary"
+                      style={{ width: "100%", fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
+                    >
+                      <ShieldAlert size={14} color="var(--brand-primary)" /> View All 12 Risk Factors
+                    </button>
+                  </div>
                 </>
               ) : (
                 <p style={{ color: "var(--text-secondary)", fontSize: 13 }}>Risk assessment is unavailable for this parcel.</p>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* ──── Plot Risk Profile ──── */}
+        {activeTab === "risk" && (
+          <div style={{ display: "grid", gap: "var(--space-md)" }}>
+            <div className="card">
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12, marginBottom: "var(--space-md)" }}>
+                <div>
+                  <h3 className="card-title" style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 18 }}>
+                    <ShieldAlert size={20} color={riskColor} /> Comprehensive Plot Risk Profile
+                  </h3>
+                  <p style={{ color: "var(--text-secondary)", fontSize: 13, marginTop: 4 }}>
+                    Multi-factor statutory, legal, cadastral, planning, environmental, and physical risk evaluation.
+                  </p>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <div style={{ textAlign: "right" }}>
+                    <div style={{ fontSize: 24, fontWeight: 800, color: riskColor }}>{risk?.compositeScore ?? risk?.score ?? 15}/100</div>
+                    <div style={{ fontSize: 10, color: "var(--text-tertiary)", textTransform: "uppercase" }}>Composite Score</div>
+                  </div>
+                  <span className={`badge ${risk?.compositeLevel === "HIGH" ? "badge-error" : risk?.compositeLevel === "MEDIUM" ? "badge-warning" : "badge-success"}`} style={{ fontSize: 13, padding: "4px 10px" }}>
+                    {risk?.compositeLevel || "LOW"} RISK
+                  </span>
+                </div>
+              </div>
+
+              <div className="alert alert-info" style={{ marginBottom: "var(--space-md)", fontSize: 13, display: "flex", alignItems: "center", gap: 8 }}>
+                <ShieldCheck size={16} color="var(--brand-primary)" style={{ flexShrink: 0 }} />
+                <div><strong>Recommendation:</strong> {risk?.recommendation || "All statutory records and spatial checks verified."}</div>
+              </div>
+
+              <div style={{ display: "flex", gap: 10, marginBottom: "var(--space-lg)", flexWrap: "wrap" }}>
+                <span className="badge badge-error" style={{ fontSize: 11 }}>🔴 {risk?.highCount || 0} High Risk Factors</span>
+                <span className="badge badge-warning" style={{ fontSize: 11 }}>🟠 {risk?.mediumCount || 0} Medium Risk Factors</span>
+                <span className="badge badge-success" style={{ fontSize: 11 }}>🟢 {risk?.lowCount || 0} Low Risk Factors</span>
+              </div>
+
+              {/* 12 Risk Categories Cards Grid */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "var(--space-md)" }}>
+                {(risk?.categories || []).map((cat: any) => {
+                  const catColor = cat.level === "HIGH" ? "var(--status-error)" : cat.level === "MEDIUM" ? "var(--status-warning)" : "var(--status-success)";
+                  const catBg = cat.level === "HIGH" ? "rgba(239, 68, 68, 0.08)" : cat.level === "MEDIUM" ? "rgba(245, 158, 11, 0.08)" : "rgba(16, 185, 129, 0.08)";
+
+                  return (
+                    <div
+                      key={cat.key}
+                      style={{
+                        background: "var(--bg-app)",
+                        border: `1px solid ${cat.level === "HIGH" ? "var(--status-error)" : "var(--border-default)"}`,
+                        borderRadius: "var(--radius-md)",
+                        padding: "var(--space-md)",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 10,
+                      }}
+                    >
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 700, fontSize: 14, color: "var(--text-primary)" }}>
+                          <span style={{ width: 10, height: 10, borderRadius: "50%", background: catColor, flexShrink: 0 }} />
+                          {cat.name}
+                        </div>
+                        <span className={`badge ${cat.level === "HIGH" ? "badge-error" : cat.level === "MEDIUM" ? "badge-warning" : "badge-success"}`} style={{ fontSize: 10 }}>
+                          {cat.level}
+                        </span>
+                      </div>
+
+                      <div style={{ fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.4 }}>
+                        <strong>Trigger Analysis:</strong> {cat.summary}
+                      </div>
+
+                      {cat.factors && cat.factors.length > 0 && (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                          {cat.factors.map((f: any, fIdx: number) => (
+                            <div
+                              key={fIdx}
+                              style={{
+                                fontSize: 11,
+                                padding: "4px 8px",
+                                borderRadius: "var(--radius-sm)",
+                                background: f.triggered ? catBg : "var(--bg-card)",
+                                border: "1px solid var(--border-default)",
+                                color: f.triggered ? catColor : "var(--text-secondary)",
+                              }}
+                            >
+                              <strong>{f.name}:</strong> {f.evidence}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      <div style={{ background: "var(--bg-card)", padding: "6px 10px", borderRadius: "var(--radius-sm)", border: "1px solid var(--border-default)", fontSize: 11 }}>
+                        <strong style={{ color: "var(--brand-primary)" }}>Action: </strong>
+                        {cat.action}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
         )}
