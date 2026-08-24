@@ -22,12 +22,14 @@ const SidebarContext = createContext<SidebarContextType>({
 export function SidebarProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
+  const [prevPathname, setPrevPathname] = useState(pathname);
   const isMapPage = pathname === "/map";
 
-  // Auto-close sidebar on route change
-  useEffect(() => {
+  // Automatically adjust sidebar state on route transitions during render without cascading effects
+  if (prevPathname !== pathname) {
+    setPrevPathname(pathname);
     setIsOpen(false);
-  }, [pathname]);
+  }
 
   const openSidebar = () => setIsOpen(true);
   const closeSidebar = () => setIsOpen(false);

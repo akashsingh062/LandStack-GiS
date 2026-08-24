@@ -673,7 +673,7 @@ function MapContent() {
       console.error("Failed to load parcels:", err);
       return null;
     }
-  }, [setupParcelLayers, inspectParcel, loadSpatialLayer]);
+  }, [setupParcelLayers, loadSpatialLayer]);
 
   // Search handler
   const handleSearch = useCallback(async (q: string) => {
