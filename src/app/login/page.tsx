@@ -2,41 +2,60 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth, DEMO_PERSONAS, UserPersona, getLucideIcon } from "@/lib/security/auth-context";
+import { useAuth } from "@/lib/security/auth-context";
+import { DEPARTMENTS, COMMON_STAFF_PASSWORD } from "@/lib/security/departments";
 import { useLanguage } from "@/lib/i18n/language-context";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import * as Lucide from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { currentUser, loginAs, loginWithOtp, loginOfficial } = useAuth();
+  const { loginWithOtp, signupCitizen, loginOfficial } = useAuth();
   const { t } = useLanguage();
 
-  // Auth Mode: "CITIZEN" (OTP) | "OFFICIAL" (Official ID)
+  // Primary Portal Tab: "CITIZEN" | "OFFICIAL"
   const [activePortal, setActivePortal] = useState<"CITIZEN" | "OFFICIAL">("CITIZEN");
 
-  // Citizen OTP States
+  // Citizen Sub-Tab: "LOGIN" | "SIGNUP"
+  const [citizenMode, setCitizenMode] = useState<"LOGIN" | "SIGNUP">("LOGIN");
+
+  // Citizen States
   const [phone, setPhone] = useState("9876543210");
-  const [otpStep, setOtpStep] = useState<"INPUT_PHONE" | "ENTER_OTP">("INPUT_PHONE");
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [stateCode, setStateCode] = useState("BR");
+  const [district, setDistrict] = useState("Madhubani");
+  const [circle, setCircle] = useState("Basopatti");
+  const [village, setVillage] = useState("Mauza Arghawa (33)");
+
+  // OTP Verification States
+  const [otpStep, setOtpStep] = useState<"FORM" | "VERIFY_OTP">("FORM");
   const [otpDigits, setOtpDigits] = useState<string[]>(["", "", "", "", "", ""]);
   const [simulatedOtp, setSimulatedOtp] = useState<string | null>("483921");
   const [resendCooldown, setResendCooldown] = useState(0);
   const [otpLoading, setOtpLoading] = useState(false);
-  const [otpError, setOtpError] = useState<string | null>(null);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [authFeedback, setAuthFeedback] = useState<string | null>(null);
 
-  // Official Login States
+  // Official Staff States
+  const [selectedDeptId, setSelectedDeptId] = useState("revenue");
   const [officialId, setOfficialId] = useState("REV-001");
-  const [password, setPassword] = useState("••••••••");
+  const [officialPassword, setOfficialPassword] = useState(COMMON_STAFF_PASSWORD);
   const [officialLoading, setOfficialLoading] = useState(false);
   const [officialError, setOfficialError] = useState<string | null>(null);
 
-  // Selected persona for quick preview
-  const [selectedPersona, setSelectedPersona] = useState<UserPersona>(currentUser);
-  const [authFeedback, setAuthFeedback] = useState<string | null>(null);
-
   const otpInputsRef = useRef<(HTMLInputElement | null)[]>([]);
 
-  // Resend timer countdown
+  // When Department dropdown changes, update default Official ID
+  const handleDepartmentChange = (deptId: string) => {
+    setSelectedDeptId(deptId);
+    const dept = DEPARTMENTS.find((d) => d.id === deptId);
+    if (dept) {
+      setOfficialId(dept.defaultOfficerId);
+    }
+  };
+
+  // Resend cooldown timer
   useEffect(() => {
     if (resendCooldown <= 0) return;
     const timer = setInterval(() => {
@@ -45,38 +64,65 @@ export default function LoginPage() {
     return () => clearInterval(timer);
   }, [resendCooldown]);
 
-  // Citizen Send OTP
-  const handleSendOtp = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
+  // Citizen Request OTP (Login or Signup)
+  const handleCitizenSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError(null);
+
     if (!phone || phone.trim().length < 10) {
-      setOtpError("Please enter a valid 10-digit mobile number.");
+      setAuthError("Please enter a valid 10-digit Indian mobile number.");
+      return;
+    }
+
+    if (citizenMode === "SIGNUP" && (!fullName || fullName.trim().length < 2)) {
+      setAuthError("Please enter your Full Legal Name as per land records.");
       return;
     }
 
     setOtpLoading(true);
-    setOtpError(null);
 
     try {
-      const res = await fetch("/api/v1/auth/otp/send", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone }),
-      });
-      const data = await res.json();
+      if (citizenMode === "SIGNUP") {
+        const res = await signupCitizen({
+          name: fullName.trim(),
+          phone: phone.trim(),
+          email: email.trim(),
+          state_code: stateCode,
+          district_code: district,
+          circle_code: circle,
+          village_code: village,
+        });
 
-      if (!res.ok) {
-        setOtpError(data.error || "Failed to dispatch OTP.");
-        setOtpLoading(false);
-        return;
+        if (!res.success) {
+          setAuthError(res.error || "Failed to initiate registration.");
+          setOtpLoading(false);
+          return;
+        }
+
+        setSimulatedOtp(res.simulated_code || "483921");
+      } else {
+        const res = await fetch("/api/v1/auth/otp/send", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ phone }),
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          setAuthError(data.error || "Failed to dispatch OTP.");
+          setOtpLoading(false);
+          return;
+        }
+
+        setSimulatedOtp(data.simulated_code || "483921");
       }
 
-      setSimulatedOtp(data.simulated_code || "483921");
       setResendCooldown(30);
-      setOtpStep("ENTER_OTP");
+      setOtpStep("VERIFY_OTP");
       setOtpDigits(["", "", "", "", "", ""]);
       setOtpLoading(false);
     } catch {
-      setOtpError("Network error sending OTP. Please check connection.");
+      setAuthError("Network error. Please check your connection.");
       setOtpLoading(false);
     }
   };
@@ -88,7 +134,6 @@ export default function LoginPage() {
     newDigits[index] = val;
     setOtpDigits(newDigits);
 
-    // Auto focus next box
     if (val && index < 5) {
       otpInputsRef.current[index + 1]?.focus();
     }
@@ -100,7 +145,7 @@ export default function LoginPage() {
     }
   };
 
-  // Auto-fill simulated OTP
+  // 1-Click Auto Fill simulated OTP
   const handleAutoFillOtp = () => {
     if (!simulatedOtp) return;
     const digits = simulatedOtp.slice(0, 6).split("");
@@ -112,71 +157,60 @@ export default function LoginPage() {
   const handleVerifyOtp = async (codeToVerify?: string) => {
     const code = codeToVerify || otpDigits.join("");
     if (code.length < 6) {
-      setOtpError("Please enter the complete 6-digit OTP.");
+      setAuthError("Please enter the complete 6-digit OTP.");
       return;
     }
 
     setOtpLoading(true);
-    setOtpError(null);
+    setAuthError(null);
 
-    const res = await loginWithOtp(phone, code, "Ramesh Kumar");
+    const res = await loginWithOtp(phone, code, {
+      fullName: fullName || undefined,
+      email: email || undefined,
+      district_code: district,
+      circle_code: circle,
+      village_code: village,
+    });
+
     if (!res.success) {
-      setOtpError(res.error || "Incorrect OTP. Please try again.");
+      setAuthError(res.error || "Incorrect OTP. Please try again.");
       setOtpLoading(false);
       return;
     }
 
-    setAuthFeedback("✓ Mobile Verified. Redirecting to Citizen Portal...");
+    setAuthFeedback("✓ Identity Verified. Logging into Citizen Dashboard...");
     setTimeout(() => {
       router.push("/");
     }, 400);
   };
 
-  // Official Login Submit
+  // Official Staff Login Submit
   const handleOfficialLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!officialId) {
-      setOfficialError("Official ID or Email is required.");
+      setOfficialError("Official Employee ID or Government Email is required.");
       return;
     }
 
     setOfficialLoading(true);
     setOfficialError(null);
 
-    const res = await loginOfficial(officialId, password);
+    const res = await loginOfficial(officialId, officialPassword, selectedDeptId);
     if (!res.success) {
       setOfficialError(res.error || "Authentication failed. Please verify credentials.");
       setOfficialLoading(false);
       return;
     }
 
-    const matched = DEMO_PERSONAS.find(
-      (p) => p.officialId.toLowerCase() === officialId.toLowerCase() || p.id === officialId
-    );
-
-    setAuthFeedback(`✓ Welcome, ${matched?.name || "Officer"} [${matched?.jurisdiction || "Bihar"}]`);
+    setAuthFeedback("✓ Welcome Officer. Accessing Departmental Portal...");
     setTimeout(() => {
-      router.push(matched?.landingUrl || "/officer");
+      router.push(res.redirect_url || "/officer");
     }, 400);
-  };
-
-  // Quick 1-click login for Judge / Evaluation Persona
-  const handleQuickPersonaSelect = (persona: UserPersona) => {
-    setSelectedPersona(persona);
-    setAuthFeedback(`Authenticating ${persona.name} (${persona.role})...`);
-    loginAs(persona.id);
-
-    setTimeout(() => {
-      setAuthFeedback(`✓ Access Granted: ${persona.title} [${persona.jurisdiction}]`);
-      setTimeout(() => {
-        router.push(persona.landingUrl);
-      }, 350);
-    }, 300);
   };
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--bg-app, #f8fafc)", color: "var(--text-primary, #0f172a)", fontFamily: "Inter, -apple-system, sans-serif" }}>
-      {/* Top Bar with Emblem and Language */}
+      {/* Top Header Bar */}
       <header style={{ background: "#ffffff", borderBottom: "1px solid #e2e8f0", padding: "12px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", position: "sticky", top: 0, zIndex: 50 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <div style={{ width: 40, height: 40, borderRadius: 10, background: "var(--brand-primary, #0284c7)", display: "flex", alignItems: "center", justifyContent: "center", color: "#ffffff", boxShadow: "0 2px 8px rgba(2, 132, 199, 0.3)" }}>
@@ -192,34 +226,34 @@ export default function LoginPage() {
         </div>
       </header>
 
-      <main style={{ maxWidth: 1100, margin: "0 auto", padding: "32px 16px 64px" }}>
-        {/* Title Header */}
-        <div style={{ textAlign: "center", marginBottom: 32 }}>
+      <main style={{ maxWidth: 720, margin: "0 auto", padding: "36px 16px 64px" }}>
+        {/* Header Title */}
+        <div style={{ textAlign: "center", marginBottom: 28 }}>
           <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(2, 132, 199, 0.08)", border: "1px solid rgba(2, 132, 199, 0.2)", padding: "4px 12px", borderRadius: 20, color: "#0284c7", fontSize: 11, fontWeight: 700, marginBottom: 12 }}>
-            <Lucide.ShieldCheck size={14} /> NIC e-Pramaan & Multi-Role RBAC / ABAC Framework
+            <Lucide.ShieldCheck size={14} /> National Land Record Authentication & RBAC Engine
           </div>
-          <h1 style={{ fontSize: 28, fontWeight: 800, color: "#0f172a", marginBottom: 8, letterSpacing: "-0.02em" }}>
-            Secure Land Governance Access Portal
+          <h1 style={{ fontSize: 26, fontWeight: 800, color: "#0f172a", marginBottom: 6, letterSpacing: "-0.02em" }}>
+            Land Governance Access Portal
           </h1>
-          <p style={{ fontSize: 14, color: "#64748b", maxWidth: 640, margin: "0 auto", lineHeight: 1.5 }}>
-            Separate, specialized onboarding pipelines for Indian Citizens and Departmental Revenue, Registration & Planning Officials.
+          <p style={{ fontSize: 13, color: "#64748b", maxWidth: 520, margin: "0 auto", lineHeight: 1.5 }}>
+            Citizen self-service onboarding and authorized departmental staff authentication.
           </p>
 
           {authFeedback && (
-            <div style={{ marginTop: 14, background: "#ecfdf5", border: "1px solid #6ee7b7", color: "#065f46", padding: "8px 16px", borderRadius: 8, fontSize: 13, fontWeight: 700, display: "inline-block", animation: "fadeIn 0.2s ease" }}>
+            <div style={{ marginTop: 14, background: "#ecfdf5", border: "1px solid #6ee7b7", color: "#065f46", padding: "8px 16px", borderRadius: 8, fontSize: 13, fontWeight: 700, display: "inline-block" }}>
               {authFeedback}
             </div>
           )}
         </div>
 
-        {/* Dual Portal Container */}
-        <div style={{ maxWidth: 540, margin: "0 auto", background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 16, overflow: "hidden", boxShadow: "0 12px 32px rgba(0,0,0,0.06)" }}>
-          {/* Portal Selector Tabs */}
+        {/* Dual Portal Card */}
+        <div style={{ background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 16, overflow: "hidden", boxShadow: "0 12px 32px rgba(0,0,0,0.06)" }}>
+          {/* Main Tabs: Citizen vs Official */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", borderBottom: "1px solid #e2e8f0", background: "#f8fafc" }}>
             <button
               onClick={() => {
                 setActivePortal("CITIZEN");
-                setOtpError(null);
+                setAuthError(null);
                 setOfficialError(null);
               }}
               style={{
@@ -228,7 +262,7 @@ export default function LoginPage() {
                 background: activePortal === "CITIZEN" ? "#ffffff" : "transparent",
                 color: activePortal === "CITIZEN" ? "#0284c7" : "#64748b",
                 fontWeight: activePortal === "CITIZEN" ? 800 : 600,
-                fontSize: 13,
+                fontSize: 14,
                 cursor: "pointer",
                 display: "flex",
                 alignItems: "center",
@@ -238,14 +272,14 @@ export default function LoginPage() {
                 transition: "all 0.15s ease",
               }}
             >
-              <Lucide.User size={16} />
-              <span>1. Citizen Self-Service</span>
+              <Lucide.User size={17} />
+              <span>1. Citizen Portal</span>
             </button>
 
             <button
               onClick={() => {
                 setActivePortal("OFFICIAL");
-                setOtpError(null);
+                setAuthError(null);
                 setOfficialError(null);
               }}
               style={{
@@ -254,7 +288,7 @@ export default function LoginPage() {
                 background: activePortal === "OFFICIAL" ? "#ffffff" : "transparent",
                 color: activePortal === "OFFICIAL" ? "#0284c7" : "#64748b",
                 fontWeight: activePortal === "OFFICIAL" ? 800 : 600,
-                fontSize: 13,
+                fontSize: 14,
                 cursor: "pointer",
                 display: "flex",
                 alignItems: "center",
@@ -264,24 +298,141 @@ export default function LoginPage() {
                 transition: "all 0.15s ease",
               }}
             >
-              <Lucide.Landmark size={16} />
+              <Lucide.Landmark size={17} />
               <span>2. Department Official</span>
             </button>
           </div>
 
-          {/* Tab 1: Citizen Mobile OTP Login */}
+          {/* ======================================================== */}
+          {/* TAB 1: CITIZEN PORTAL (SIGNUP & LOGIN)                   */}
+          {/* ======================================================== */}
           {activePortal === "CITIZEN" && (
             <div style={{ padding: "24px 28px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
-                <span style={{ fontSize: 11, background: "#e0f2fe", color: "#0369a1", padding: "3px 8px", borderRadius: 4, fontWeight: 800 }}>PUBLIC PORTAL</span>
-                <span style={{ fontSize: 12, color: "#64748b" }}>Self-registration & instant OTP login</span>
+              {/* Sub-Switch: Login vs Sign Up */}
+              <div style={{ display: "flex", background: "#f1f5f9", padding: 4, borderRadius: 8, marginBottom: 20 }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCitizenMode("LOGIN");
+                    setOtpStep("FORM");
+                    setAuthError(null);
+                  }}
+                  style={{
+                    flex: 1,
+                    padding: "8px 12px",
+                    border: "none",
+                    borderRadius: 6,
+                    background: citizenMode === "LOGIN" ? "#ffffff" : "transparent",
+                    color: citizenMode === "LOGIN" ? "#0f172a" : "#64748b",
+                    fontWeight: citizenMode === "LOGIN" ? 800 : 600,
+                    fontSize: 13,
+                    cursor: "pointer",
+                    boxShadow: citizenMode === "LOGIN" ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
+                  }}
+                >
+                  Citizen Login (OTP)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCitizenMode("SIGNUP");
+                    setOtpStep("FORM");
+                    setAuthError(null);
+                  }}
+                  style={{
+                    flex: 1,
+                    padding: "8px 12px",
+                    border: "none",
+                    borderRadius: 6,
+                    background: citizenMode === "SIGNUP" ? "#ffffff" : "transparent",
+                    color: citizenMode === "SIGNUP" ? "#0f172a" : "#64748b",
+                    fontWeight: citizenMode === "SIGNUP" ? 800 : 600,
+                    fontSize: 13,
+                    cursor: "pointer",
+                    boxShadow: citizenMode === "SIGNUP" ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
+                  }}
+                >
+                  ✨ New Citizen Sign Up
+                </button>
               </div>
 
-              {otpStep === "INPUT_PHONE" ? (
-                <form onSubmit={handleSendOtp}>
+              {otpStep === "FORM" ? (
+                <form onSubmit={handleCitizenSubmit}>
+                  {citizenMode === "SIGNUP" && (
+                    <>
+                      <div style={{ marginBottom: 14 }}>
+                        <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#334155", marginBottom: 6 }}>
+                          Full Legal Name <span style={{ color: "#ef4444" }}>*</span>
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={fullName}
+                          onChange={(e) => setFullName(e.target.value)}
+                          placeholder="e.g. Ramesh Kumar"
+                          style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #cbd5e1", fontSize: 13, color: "#0f172a", outline: "none", background: "#f8fafc" }}
+                        />
+                      </div>
+
+                      <div style={{ marginBottom: 14 }}>
+                        <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#334155", marginBottom: 6 }}>
+                          Email Address (Optional)
+                        </label>
+                        <input
+                          type="email"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          placeholder="e.g. ramesh.kumar@example.com"
+                          style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #cbd5e1", fontSize: 13, color: "#0f172a", outline: "none", background: "#f8fafc" }}
+                        />
+                      </div>
+
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
+                        <div>
+                          <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#334155", marginBottom: 6 }}>
+                            District
+                          </label>
+                          <input
+                            type="text"
+                            value={district}
+                            onChange={(e) => setDistrict(e.target.value)}
+                            placeholder="Madhubani"
+                            style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #cbd5e1", fontSize: 13, color: "#0f172a", outline: "none", background: "#f8fafc" }}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#334155", marginBottom: 6 }}>
+                            Circle / Anchal
+                          </label>
+                          <input
+                            type="text"
+                            value={circle}
+                            onChange={(e) => setCircle(e.target.value)}
+                            placeholder="Basopatti"
+                            style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #cbd5e1", fontSize: 13, color: "#0f172a", outline: "none", background: "#f8fafc" }}
+                          />
+                        </div>
+                      </div>
+
+                      <div style={{ marginBottom: 16 }}>
+                        <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#334155", marginBottom: 6 }}>
+                          Mauza / Village (Optional)
+                        </label>
+                        <input
+                          type="text"
+                          value={village}
+                          onChange={(e) => setVillage(e.target.value)}
+                          placeholder="Mauza Arghawa (33)"
+                          style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #cbd5e1", fontSize: 13, color: "#0f172a", outline: "none", background: "#f8fafc" }}
+                        />
+                      </div>
+                    </>
+                  )}
+
+                  {/* Registered Mobile Number Input with strict 1-line SVG flag & +91 */}
                   <div style={{ marginBottom: 18 }}>
                     <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#334155", marginBottom: 6 }}>
-                      Registered Indian Mobile Number
+                      {citizenMode === "SIGNUP" ? "Mobile Number for OTP Verification" : "Registered Indian Mobile Number"} <span style={{ color: "#ef4444" }}>*</span>
                     </label>
                     <div style={{ display: "flex", alignItems: "center", border: "1px solid #cbd5e1", borderRadius: 8, overflow: "hidden", background: "#f8fafc" }}>
                       <div style={{ padding: "0 14px", background: "#e2e8f0", borderRight: "1px solid #cbd5e1", height: 42, display: "inline-flex", flexDirection: "row", alignItems: "center", gap: 8, flexShrink: 0, whiteSpace: "nowrap" }}>
@@ -305,13 +456,13 @@ export default function LoginPage() {
                       />
                     </div>
                     <div style={{ fontSize: 11, color: "#64748b", marginTop: 6 }}>
-                      A 6-digit verification code will be sent via SMS / simulated SMS gateway.
+                      A 6-digit OTP verification code will be sent via SMS / simulated SMS gateway.
                     </div>
                   </div>
 
-                  {otpError && (
+                  {authError && (
                     <div style={{ background: "#fef2f2", border: "1px solid #fca5a5", color: "#b91c1c", padding: "8px 12px", borderRadius: 6, fontSize: 12, marginBottom: 14 }}>
-                      ⚠️ {otpError}
+                      ⚠️ {authError}
                     </div>
                   )}
 
@@ -336,20 +487,21 @@ export default function LoginPage() {
                     }}
                   >
                     {otpLoading ? <Lucide.Loader2 size={16} className="animate-spin" /> : <Lucide.Send size={16} />}
-                    <span>{otpLoading ? "Sending OTP..." : "Get Verification Code (Send OTP)"}</span>
+                    <span>{otpLoading ? "Processing..." : citizenMode === "SIGNUP" ? "Register & Send OTP" : "Get Verification Code (Send OTP)"}</span>
                   </button>
                 </form>
               ) : (
+                /* OTP Verification View */
                 <div>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
                     <div style={{ fontSize: 13, color: "#334155", fontWeight: 600 }}>
                       Enter 6-digit OTP sent to <strong style={{ color: "#0f172a" }}>+91 {phone.slice(-4).padStart(10, "•")}</strong>
                     </div>
                     <button
-                      onClick={() => setOtpStep("INPUT_PHONE")}
+                      onClick={() => setOtpStep("FORM")}
                       style={{ background: "transparent", border: "none", color: "#0284c7", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
                     >
-                      Change
+                      Change Mobile
                     </button>
                   </div>
 
@@ -396,7 +548,7 @@ export default function LoginPage() {
                     >
                       <div>
                         <div style={{ fontSize: 10, fontWeight: 800, color: "#166534", textTransform: "uppercase", letterSpacing: "0.04em" }}>
-                          ⚡ HACKATHON DEMO OTP (SIMULATED)
+                          ⚡ SIMULATED SMS OTP
                         </div>
                         <div style={{ fontSize: 15, fontWeight: 900, color: "#15803d", letterSpacing: "0.15em", fontFamily: "monospace" }}>
                           {simulatedOtp}
@@ -421,9 +573,9 @@ export default function LoginPage() {
                     </div>
                   )}
 
-                  {otpError && (
+                  {authError && (
                     <div style={{ background: "#fef2f2", border: "1px solid #fca5a5", color: "#b91c1c", padding: "8px 12px", borderRadius: 6, fontSize: 12, marginBottom: 14 }}>
-                      ⚠️ {otpError}
+                      ⚠️ {authError}
                     </div>
                   )}
 
@@ -448,7 +600,7 @@ export default function LoginPage() {
                       }}
                     >
                       {otpLoading ? <Lucide.Loader2 size={16} className="animate-spin" /> : <Lucide.CheckCircle2 size={16} />}
-                      <span>Verify & Access Citizen Dashboard</span>
+                      <span>{citizenMode === "SIGNUP" ? "Complete Registration & Login" : "Verify & Access Dashboard"}</span>
                     </button>
                   </div>
 
@@ -457,7 +609,7 @@ export default function LoginPage() {
                       <span>Resend OTP in <strong>{resendCooldown}s</strong></span>
                     ) : (
                       <button
-                        onClick={() => handleSendOtp()}
+                        onClick={(e) => handleCitizenSubmit(e)}
                         style={{ background: "transparent", border: "none", color: "#0284c7", fontWeight: 700, cursor: "pointer", fontSize: 12 }}
                       >
                         Resend OTP
@@ -469,7 +621,9 @@ export default function LoginPage() {
             </div>
           )}
 
-          {/* Tab 2: Department Official Login (No Public Signup) */}
+          {/* ======================================================== */}
+          {/* TAB 2: DEPARTMENT OFFICIAL LOGIN (WITH DROPDOWN)         */}
+          {/* ======================================================== */}
           {activePortal === "OFFICIAL" && (
             <div style={{ padding: "24px 28px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
@@ -477,18 +631,48 @@ export default function LoginPage() {
               </div>
 
               <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", padding: "10px 12px", borderRadius: 8, fontSize: 11, color: "#64748b", marginBottom: 18, lineHeight: 1.4 }}>
-                🔒 Official accounts are provisioned exclusively by the State Nodal IT Administrator. Public citizen sign-up is strictly prohibited for departmental logins.
+                🔒 Official accounts are pre-provisioned in the State Land Registry database. Please select your Department and enter your Official Employee ID.
               </div>
 
               <form onSubmit={handleOfficialLogin}>
+                {/* Department Dropdown */}
                 <div style={{ marginBottom: 14 }}>
                   <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#334155", marginBottom: 6 }}>
-                    Official Employee ID / Gov Email
+                    Select Government Department <span style={{ color: "#ef4444" }}>*</span>
+                  </label>
+                  <select
+                    value={selectedDeptId}
+                    onChange={(e) => handleDepartmentChange(e.target.value)}
+                    style={{
+                      width: "100%",
+                      padding: "10px 12px",
+                      borderRadius: 8,
+                      border: "1px solid #cbd5e1",
+                      fontSize: 13,
+                      color: "#0f172a",
+                      background: "#ffffff",
+                      fontWeight: 600,
+                      outline: "none",
+                    }}
+                  >
+                    {DEPARTMENTS.map((dept) => (
+                      <option key={dept.id} value={dept.id}>
+                        {dept.name} ({dept.code}) — {dept.defaultOfficerName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Official ID Input */}
+                <div style={{ marginBottom: 14 }}>
+                  <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#334155", marginBottom: 6 }}>
+                    Official Employee ID / Gov Email <span style={{ color: "#ef4444" }}>*</span>
                   </label>
                   <div style={{ display: "flex", alignItems: "center", border: "1px solid #cbd5e1", borderRadius: 8, background: "#ffffff", padding: "0 12px" }}>
                     <Lucide.BadgeCheck size={16} style={{ color: "#64748b", marginRight: 8 }} />
                     <input
                       type="text"
+                      required
                       value={officialId}
                       onChange={(e) => setOfficialId(e.target.value)}
                       placeholder="e.g. REV-001 or co.basopatti@bihar.gov.in"
@@ -497,20 +681,24 @@ export default function LoginPage() {
                   </div>
                 </div>
 
+                {/* Password Input with Common Password Prompt */}
                 <div style={{ marginBottom: 18 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
                     <label style={{ fontSize: 12, fontWeight: 700, color: "#334155" }}>
-                      Department Password / 2FA Pin
+                      Department Password <span style={{ color: "#ef4444" }}>*</span>
                     </label>
-                    <span style={{ fontSize: 11, color: "#0284c7" }}>NIC e-Pramaan 2FA</span>
+                    <span style={{ fontSize: 11, color: "#0284c7", fontWeight: 600 }}>
+                      Common Staff Password: <strong>sih@2026</strong>
+                    </span>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", border: "1px solid #cbd5e1", borderRadius: 8, background: "#ffffff", padding: "0 12px" }}>
                     <Lucide.Lock size={16} style={{ color: "#64748b", marginRight: 8 }} />
                     <input
                       type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••••"
+                      required
+                      value={officialPassword}
+                      onChange={(e) => setOfficialPassword(e.target.value)}
+                      placeholder="sih@2026"
                       style={{ border: "none", outline: "none", height: 40, width: "100%", fontSize: 13, color: "#0f172a" }}
                     />
                   </div>
@@ -548,93 +736,6 @@ export default function LoginPage() {
               </form>
             </div>
           )}
-        </div>
-
-        {/* ⚡ SIH 2026 Evaluation Personas Dock (For Hackathon Judges) */}
-        <div style={{ marginTop: 48 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-            <div>
-              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 14, fontWeight: 800, color: "#0f172a" }}>
-                <span>⚡</span>
-                <span>SIH 2026 Evaluation Personas (6 Core Roles)</span>
-                <span style={{ fontSize: 10, background: "#dbeafe", color: "#1d4ed8", padding: "2px 8px", borderRadius: 12, fontWeight: 700 }}>
-                  RBAC + ABAC + JURISDICTION
-                </span>
-              </div>
-              <div style={{ fontSize: 12, color: "#64748b" }}>
-                Click any role to simulate immediate login with statutory departmental permissions and jurisdiction filters.
-              </div>
-            </div>
-          </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 12 }}>
-            {DEMO_PERSONAS.slice(0, 6).map((persona) => {
-              const isCurrentActive = currentUser.id === persona.id || currentUser.officialId === persona.officialId;
-
-              return (
-                <div
-                  key={persona.id}
-                  onClick={() => handleQuickPersonaSelect(persona)}
-                  style={{
-                    background: isCurrentActive ? "#f0f9ff" : "#ffffff",
-                    border: isCurrentActive ? "2px solid #0284c7" : "1px solid #cbd5e1",
-                    borderRadius: 12,
-                    padding: "12px 14px",
-                    cursor: "pointer",
-                    transition: "all 0.15s ease",
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "space-between",
-                    position: "relative",
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!isCurrentActive) {
-                      e.currentTarget.style.borderColor = "#94a3b8";
-                      e.currentTarget.style.transform = "translateY(-2px)";
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!isCurrentActive) {
-                      e.currentTarget.style.borderColor = "#cbd5e1";
-                      e.currentTarget.style.transform = "none";
-                    }
-                  }}
-                >
-                  <div>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <div style={{ width: 28, height: 28, borderRadius: 6, background: isCurrentActive ? "#0284c7" : "#f1f5f9", color: isCurrentActive ? "#fff" : "#0f172a", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                          {React.createElement(getLucideIcon(persona.icon), { size: 15 })}
-                        </div>
-                        <div>
-                          <div style={{ fontSize: 13, fontWeight: 800, color: "#0f172a" }}>{persona.name}</div>
-                          <div style={{ fontSize: 10, color: "#0284c7", fontWeight: 700 }}>{persona.officialId} • {persona.title}</div>
-                        </div>
-                      </div>
-
-                      <span style={{ fontSize: 9, background: persona.userType === "CITIZEN" ? "#e0f2fe" : "#f1f5f9", color: persona.userType === "CITIZEN" ? "#0369a1" : "#475569", padding: "2px 6px", borderRadius: 4, fontWeight: 800 }}>
-                        {persona.role}
-                      </span>
-                    </div>
-
-                    <div style={{ fontSize: 11, color: "#475569", marginBottom: 6 }}>
-                      📍 <strong>Jurisdiction:</strong> {persona.jurisdiction}
-                    </div>
-                    <div style={{ fontSize: 10, color: "#64748b", lineHeight: 1.35 }}>
-                      {persona.description}
-                    </div>
-                  </div>
-
-                  <div style={{ marginTop: 10, paddingTop: 8, borderTop: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{ fontSize: 10, color: "#94a3b8" }}>{persona.department}</span>
-                    <span style={{ fontSize: 11, fontWeight: 700, color: "#0284c7" }}>
-                      {isCurrentActive ? "Active Session ✓" : "1-Click Switch →"}
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
         </div>
       </main>
     </div>

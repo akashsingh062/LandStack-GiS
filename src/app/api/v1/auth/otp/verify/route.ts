@@ -1,17 +1,17 @@
 /**
  * POST /api/v1/auth/otp/verify
- * Validates citizen mobile OTP, provisions session token, and establishes identity
+ * Validates citizen mobile OTP, saves/retrieves identity from database, and issues session token
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { verifyOtp, normalizePhoneNumber } from "@/lib/security/otp-service";
 import { ROLE_PERMISSIONS } from "@/lib/security/rbac-matrix";
-import { DEMO_PERSONAS } from "@/lib/security/personas";
+import { getUserByPhone, registerOrUpdateCitizen } from "@/lib/security/user-store";
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { phone, code, fullName } = body;
+    const { phone, code, fullName, email, district_code, circle_code, village_code } = body;
 
     if (!phone || !code) {
       return NextResponse.json(
@@ -33,32 +33,56 @@ export async function POST(request: NextRequest) {
     }
 
     const normalized = normalizePhoneNumber(phone);
-    // Find existing persona or create standard citizen session
-    const defaultCitizen = DEMO_PERSONAS.find((p) => p.role === "CITIZEN") || DEMO_PERSONAS[0];
+
+    // Look up existing user in database or register new citizen
+    let dbUser = await getUserByPhone(normalized);
+
+    if (!dbUser) {
+      dbUser = await registerOrUpdateCitizen({
+        name: fullName?.trim() || "Citizen User",
+        phone: normalized,
+        email: email?.trim(),
+        district_code: district_code || "BR-10",
+        circle_code: circle_code || "Basopatti",
+        village_code: village_code || "Arghawa (33)",
+      });
+    } else if (fullName && fullName.trim()) {
+      // Update name if provided
+      dbUser = await registerOrUpdateCitizen({
+        name: fullName.trim(),
+        phone: normalized,
+        email: email?.trim() || dbUser.email,
+        district_code: district_code || dbUser.district_code,
+        circle_code: circle_code || dbUser.circle_code,
+        village_code: village_code || dbUser.village_code,
+      });
+    }
 
     const citizenUser = {
-      id: defaultCitizen.id,
-      name: fullName?.trim() || defaultCitizen.name,
+      id: dbUser.username || `citizen_${normalized.slice(-10)}`,
+      officialId: dbUser.official_id || `CITIZEN-${normalized.slice(-4)}`,
+      name: dbUser.name,
       role: "CITIZEN",
-      user_type: "CITIZEN",
+      userType: "CITIZEN",
       title: "Citizen / Land Owner",
       department: "Public Citizen Portal",
-      phone: normalized,
-      email: defaultCitizen.email,
-      jurisdiction: defaultCitizen.jurisdiction,
-      stateCode: defaultCitizen.stateCode,
-      districtCode: defaultCitizen.districtCode,
-      circleCode: defaultCitizen.circleCode,
+      phone: dbUser.phone || normalized,
+      email: dbUser.email || `${dbUser.username}@biharbhumi.bihar.gov.in`,
+      jurisdiction: dbUser.jurisdiction || "Basopatti, Madhubani (Bihar)",
+      stateCode: dbUser.state_code || "BR",
+      districtCode: dbUser.district_code || "BR-10",
+      circleCode: dbUser.circle_code || "Basopatti",
       landingUrl: "/",
     };
 
     const token = Buffer.from(
       JSON.stringify({
         sub: citizenUser.id,
+        official_id: citizenUser.officialId,
         phone: citizenUser.phone,
         name: citizenUser.name,
         role: citizenUser.role,
-        user_type: citizenUser.user_type,
+        user_type: citizenUser.userType,
         jurisdiction: citizenUser.jurisdiction,
         permissions: ROLE_PERMISSIONS.CITIZEN,
         iat: Date.now(),
@@ -68,7 +92,7 @@ export async function POST(request: NextRequest) {
 
     const response = NextResponse.json({
       success: true,
-      message: "Authentication successful.",
+      message: `Authentication successful. Welcome, ${citizenUser.name}.`,
       token,
       user: citizenUser,
       permissions: ROLE_PERMISSIONS.CITIZEN,
