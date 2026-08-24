@@ -36,6 +36,29 @@ export async function GET(
   }
 }
 
+function checkOfficerDepartmentJurisdiction(
+  officerRole: string,
+  officerDept: string,
+  appDept: string
+): boolean {
+  if (officerRole === "SUPER_ADMIN" || officerRole === "ADMIN" || officerRole === "AUDITOR") {
+    return true;
+  }
+  const oDept = (officerDept || "").toLowerCase();
+  const aDept = (appDept || "").toLowerCase();
+
+  if (officerRole === "REVENUE_OFFICER" && aDept.includes("revenue")) return true;
+  if (officerRole === "REGISTRATION_OFFICER" && (aDept.includes("registration") || aDept.includes("stamps"))) return true;
+  if (officerRole === "PLANNING_OFFICER" && (aDept.includes("planning") || aDept.includes("housing"))) return true;
+  if (officerRole === "TAX_OFFICER" && (aDept.includes("tax") || aDept.includes("municipality"))) return true;
+
+  if (oDept && aDept && (aDept.includes(oDept) || oDept.includes(aDept))) {
+    return true;
+  }
+
+  return false;
+}
+
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -49,7 +72,7 @@ export async function PATCH(
       status, 
       current_step,
       officer_name = "Land Officer Vikram Singh", 
-      role = "LAND_OFFICER",
+      role = "REVENUE_OFFICER",
       department = "Revenue Department",
       comments = "",
       escalated,
@@ -66,6 +89,17 @@ export async function PATCH(
     }
 
     const application = appRes.rows[0];
+
+    // Enforce Statutory Department Jurisdiction
+    const hasJurisdiction = checkOfficerDepartmentJurisdiction(role, department, application.department);
+    if (!hasJurisdiction) {
+      return NextResponse.json(
+        {
+          error: `Statutory Jurisdiction Error: Officer '${officer_name}' (${department}) cannot verify or take action on an application currently under review by '${application.department}'.`,
+        },
+        { status: 403 }
+      );
+    }
 
     let newStatus = application.status;
     let newStep = application.current_step;

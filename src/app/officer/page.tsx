@@ -31,7 +31,7 @@ import {
   ShieldAlert,
 } from "lucide-react";
 
-const DEPARTMENTS = [
+const ALL_DEPARTMENTS = [
   "All",
   "Revenue",
   "Registration",
@@ -39,6 +39,32 @@ const DEPARTMENTS = [
   "Municipality",
   "Environment",
 ];
+
+function getAllowedDepartments(role?: string): string[] {
+  if (!role || role === "GUEST") return ["Revenue"];
+  if (role === "SUPER_ADMIN" || role === "ADMIN" || role === "AUDITOR") {
+    return ALL_DEPARTMENTS;
+  }
+  if (role === "REVENUE_OFFICER") return ["Revenue"];
+  if (role === "REGISTRATION_OFFICER") return ["Registration"];
+  if (role === "PLANNING_OFFICER") return ["Planning"];
+  if (role === "TAX_OFFICER") return ["Municipality"];
+  return ["Revenue"];
+}
+
+function checkCanOfficerVerifyApplication(currentUser: any, appDept?: string): boolean {
+  if (!currentUser) return false;
+  const role = currentUser.role;
+  if (role === "SUPER_ADMIN" || role === "ADMIN" || role === "AUDITOR") return true;
+
+  const targetDept = (appDept || "").toLowerCase();
+  if (role === "REVENUE_OFFICER" && targetDept.includes("revenue")) return true;
+  if (role === "REGISTRATION_OFFICER" && (targetDept.includes("registration") || targetDept.includes("stamps"))) return true;
+  if (role === "PLANNING_OFFICER" && (targetDept.includes("planning") || targetDept.includes("housing"))) return true;
+  if (role === "TAX_OFFICER" && (targetDept.includes("municipality") || targetDept.includes("tax"))) return true;
+
+  return false;
+}
 
 const STATUS_MAP: Record<string, { label: string; class: string }> = {
   SUBMITTED: { label: "Submitted", class: "badge-info" },
@@ -58,13 +84,24 @@ export default function OfficerPortal() {
   const [selectedAppNo, setSelectedAppNo] = useState<string | null>(null);
   const [selectedDetail, setSelectedDetail] = useState<any | null>(null);
   const [parcel360, setParcel360] = useState<any | null>(null);
+
+  const allowedDepts = getAllowedDepartments(currentUser?.role);
+
   const [selectedDept, setSelectedDept] = useState(() => {
     if (currentUser?.role === "REGISTRATION_OFFICER") return "Registration";
     if (currentUser?.role === "PLANNING_OFFICER") return "Planning";
     if (currentUser?.role === "TAX_OFFICER") return "Municipality";
     if (currentUser?.role === "REVENUE_OFFICER") return "Revenue";
-    return "All";
+    return "Revenue";
   });
+
+  // Sync selectedDept if user role changes or restricts it
+  useEffect(() => {
+    const allowed = getAllowedDepartments(currentUser?.role);
+    if (!allowed.includes(selectedDept)) {
+      setSelectedDept(allowed[0]);
+    }
+  }, [currentUser?.role, selectedDept]);
   const [actionLoading, setActionLoading] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -412,34 +449,113 @@ export default function OfficerPortal() {
         ))}
       </motion.div>
 
-      {/* Department Filter Tabs */}
-      <div
-        style={{
-          display: "flex",
-          gap: 8,
-          marginBottom: "var(--space-md)",
-          borderBottom: "1px solid var(--border-color)",
-          paddingBottom: 10,
-          overflowX: "auto",
-          whiteSpace: "nowrap",
-        }}
-      >
-        {DEPARTMENTS.map((dept) => (
-          <button
-            key={dept}
-            onClick={() => setSelectedDept(dept)}
-            className={`btn ${selectedDept === dept ? "btn-primary" : "btn-outline"}`}
-            style={{ fontSize: 12, padding: "6px 14px", flexShrink: 0 }}
-          >
-            {dept === "Revenue" && "🌾 "}
-            {dept === "Registration" && "📝 "}
-            {dept === "Planning" && "📐 "}
-            {dept === "Municipality" && "🏛️ "}
-            {dept === "Environment" && "🌲 "}
-            {dept} Department
-          </button>
-        ))}
-      </div>
+      {/* Department Queue Indicator / Filter Tabs */}
+      {allowedDepts.length === 1 ? (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            background: "var(--bg-elevated)",
+            border: "1px solid var(--border-default)",
+            padding: "12px 18px",
+            borderRadius: "var(--radius-md)",
+            marginBottom: "var(--space-md)",
+            flexWrap: "wrap",
+            gap: 12,
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <span style={{ fontSize: 24 }}>
+              {allowedDepts[0] === "Revenue" && "🌾"}
+              {allowedDepts[0] === "Registration" && "📝"}
+              {allowedDepts[0] === "Planning" && "📐"}
+              {allowedDepts[0] === "Municipality" && "🏛️"}
+              {allowedDepts[0] === "Environment" && "🌲"}
+            </span>
+            <div>
+              <div
+                style={{
+                  fontSize: 14,
+                  fontWeight: 800,
+                  color: "var(--text-primary)",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                }}
+              >
+                <span>{allowedDepts[0]} Department Queue</span>
+                <span
+                  className="badge badge-primary"
+                  style={{ fontSize: 10, padding: "2px 8px" }}
+                >
+                  🔒 Department Isolated View
+                </span>
+              </div>
+              <div
+                style={{
+                  fontSize: 12,
+                  color: "var(--text-secondary)",
+                  marginTop: 2,
+                }}
+              >
+                Designated Officer:{" "}
+                <strong style={{ color: "var(--text-primary)" }}>
+                  {currentUser?.name || "Official"}
+                </strong>{" "}
+                ({currentUser?.title?.split("(")[0] || currentUser?.role}) •
+                Jurisdiction:{" "}
+                {currentUser?.jurisdiction || "Designated Circle / District"}
+              </div>
+            </div>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span
+              style={{
+                fontSize: 11,
+                color: "#16a34a",
+                background: "rgba(22, 163, 74, 0.1)",
+                padding: "4px 10px",
+                borderRadius: 6,
+                fontWeight: 700,
+                display: "flex",
+                alignItems: "center",
+                gap: 5,
+              }}
+            >
+              <Check size={13} /> Active Statutory Scrutiny Desk
+            </span>
+          </div>
+        </div>
+      ) : (
+        <div
+          style={{
+            display: "flex",
+            gap: 8,
+            marginBottom: "var(--space-md)",
+            borderBottom: "1px solid var(--border-color)",
+            paddingBottom: 10,
+            overflowX: "auto",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {allowedDepts.map((dept) => (
+            <button
+              key={dept}
+              onClick={() => setSelectedDept(dept)}
+              className={`btn ${selectedDept === dept ? "btn-primary" : "btn-outline"}`}
+              style={{ fontSize: 12, padding: "6px 14px", flexShrink: 0 }}
+            >
+              {dept === "Revenue" && "🌾 "}
+              {dept === "Registration" && "📝 "}
+              {dept === "Planning" && "📐 "}
+              {dept === "Municipality" && "🏛️ "}
+              {dept === "Environment" && "🌲 "}
+              {dept} {dept !== "All" ? "Department" : "Departments (Apex)"}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Main 2-Column Interface: Queue on Left, Land 360 Case Viewer on Right */}
       <div
@@ -1160,86 +1276,138 @@ export default function OfficerPortal() {
                 </div>
               )}
 
-              {/* Action Buttons */}
-              <div
-                style={{
-                  display: "flex",
-                  gap: 8,
-                  marginTop: "auto",
-                  paddingTop: 12,
-                  borderTop: "1px solid var(--border-color)",
-                  flexWrap: "wrap",
-                }}
-              >
-                <button
-                  className="btn btn-primary"
+              {/* Action Buttons with Department Jurisdiction Enforcement */}
+              {checkCanOfficerVerifyApplication(currentUser, app.department) ? (
+                <div
                   style={{
-                    flex: 1,
-                    minWidth: 200,
-                    fontSize: 12,
-                    justifyContent: "center",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 6,
-                    fontWeight: 700,
+                    display: "flex",
+                    gap: 8,
+                    marginTop: "auto",
+                    paddingTop: 12,
+                    borderTop: "1px solid var(--border-color)",
+                    flexWrap: "wrap",
                   }}
-                  onClick={() => setModalMode("APPROVE")}
-                  disabled={actionLoading}
                 >
-                  <Check size={14} />
-                  <span>
-                    {!isFinalStage && nextStage
-                      ? `Approve & Route to ${nextStage.deptCode} →`
-                      : "Grant Final Statutory Sanction"}
-                  </span>
-                </button>
-                <button
-                  className="btn btn-outline"
-                  style={{
-                    fontSize: 12,
-                    color: "var(--status-warning)",
-                    borderColor: "var(--status-warning)",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 6,
-                  }}
-                  onClick={() => setModalMode("REQUEST_INFO")}
-                  disabled={actionLoading}
-                >
-                  <FileQuestion size={14} /> Request Info
-                </button>
-                <button
-                  className="btn btn-outline"
-                  style={{
-                    fontSize: 12,
-                    color: "var(--status-error)",
-                    borderColor: "var(--status-error)",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 6,
-                  }}
-                  onClick={() => setModalMode("REJECT")}
-                  disabled={actionLoading}
-                >
-                  <X size={14} /> Reject
-                </button>
-                {app.sla_status === "SLA_BREACHED" && !app.escalated && (
+                  <button
+                    className="btn btn-primary"
+                    style={{
+                      flex: 1,
+                      minWidth: 200,
+                      fontSize: 12,
+                      justifyContent: "center",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 6,
+                      fontWeight: 700,
+                    }}
+                    onClick={() => setModalMode("APPROVE")}
+                    disabled={actionLoading}
+                  >
+                    <Check size={14} />
+                    <span>
+                      {!isFinalStage && nextStage
+                        ? `Approve & Route to ${nextStage.deptCode} →`
+                        : "Grant Final Statutory Sanction"}
+                    </span>
+                  </button>
+                  <button
+                    className="btn btn-outline"
+                    style={{
+                      fontSize: 12,
+                      color: "var(--status-warning)",
+                      borderColor: "var(--status-warning)",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 6,
+                    }}
+                    onClick={() => setModalMode("REQUEST_INFO")}
+                    disabled={actionLoading}
+                  >
+                    <FileQuestion size={14} /> Request Info
+                  </button>
                   <button
                     className="btn btn-outline"
                     style={{
                       fontSize: 12,
                       color: "var(--status-error)",
+                      borderColor: "var(--status-error)",
                       display: "inline-flex",
                       alignItems: "center",
                       gap: 6,
                     }}
-                    onClick={() => setModalMode("ESCALATE")}
+                    onClick={() => setModalMode("REJECT")}
                     disabled={actionLoading}
                   >
-                    <AlertTriangle size={14} /> Escalate SLA
+                    <X size={14} /> Reject
                   </button>
-                )}
-              </div>
+                  {app.sla_status === "SLA_BREACHED" && !app.escalated && (
+                    <button
+                      className="btn btn-outline"
+                      style={{
+                        fontSize: 12,
+                        color: "var(--status-error)",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 6,
+                      }}
+                      onClick={() => setModalMode("ESCALATE")}
+                      disabled={actionLoading}
+                    >
+                      <AlertTriangle size={14} /> Escalate SLA
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div
+                  style={{
+                    padding: "14px 16px",
+                    background: "rgba(245, 158, 11, 0.08)",
+                    border: "1px solid rgba(245, 158, 11, 0.35)",
+                    borderRadius: "var(--radius-md)",
+                    marginTop: "auto",
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: 12,
+                  }}
+                >
+                  <Lock
+                    size={18}
+                    color="#d97706"
+                    style={{ marginTop: 2, flexShrink: 0 }}
+                  />
+                  <div
+                    style={{
+                      fontSize: 12,
+                      lineHeight: 1.5,
+                      color: "var(--text-secondary)",
+                    }}
+                  >
+                    <strong
+                      style={{
+                        color: "#d97706",
+                        display: "block",
+                        marginBottom: 2,
+                        fontSize: 13,
+                      }}
+                    >
+                      🔒 Inter-Department Jurisdiction Lock (Read-Only Inspection)
+                    </strong>
+                    This application is currently assigned to{" "}
+                    <strong style={{ color: "var(--text-primary)" }}>
+                      {app.department}
+                    </strong>{" "}
+                    for statutory scrutiny and sanction. You are authenticated as{" "}
+                    <strong>{currentUser?.name || "Official"}</strong> (
+                    <em>
+                      {currentUser?.department ||
+                        currentUser?.title ||
+                        currentUser?.role}
+                    </em>
+                    ). Verification, remark submission, and approval actions are
+                    restricted to designated officers of {app.department}.
+                  </div>
+                </div>
+              )}
             </>
           ) : (
             <p
