@@ -278,6 +278,13 @@ export function getWorkflowDefinition(serviceType: string): ServiceWorkflowDefin
 export function getCurrentStageIndex(workflow: ServiceWorkflowDefinition, currentStep?: string): number {
   if (!currentStep) return 0;
   
+  const lower = currentStep.toLowerCase();
+
+  // If already approved, certified, or completed -> return last stage
+  if (lower.includes("approved") || lower.includes("certified") || lower.includes("completed") || lower.includes("final")) {
+    return Math.max(0, workflow.stages.length - 1);
+  }
+
   // 1. Prioritize explicit Stage number in step string: e.g. "Stage 4:" or "[Stage 4]"
   const stageMatch = currentStep.match(/Stage\s*(\d+)/i);
   if (stageMatch) {
@@ -285,8 +292,6 @@ export function getCurrentStageIndex(workflow: ServiceWorkflowDefinition, curren
     const foundIdx = workflow.stages.findIndex((s) => s.stage === stageNum);
     if (foundIdx >= 0) return foundIdx;
   }
-
-  const lower = currentStep.toLowerCase();
 
   // 2. Match exact stage name
   const nameIndex = workflow.stages.findIndex((s) => lower.includes(s.name.toLowerCase()));
