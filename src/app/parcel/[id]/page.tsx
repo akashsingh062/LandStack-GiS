@@ -36,6 +36,7 @@ import {
   ArrowLeft,
   ExternalLink,
   Shield,
+  ShieldAlert,
   Clock,
   Sparkles,
 } from "lucide-react";
@@ -136,7 +137,9 @@ export default function ParcelPage() {
 
   const p = data.parcel;
   const rules = data.rules_evaluation;
+  const risk = data.risk_evaluation;
   const quality = data.integration?.data_quality;
+  const riskColor = risk?.level === "HIGH" ? "var(--status-error)" : risk?.level === "MEDIUM" ? "var(--status-warning)" : "var(--status-success)";
 
   return (
     <div className="app-content animate-in">
@@ -208,6 +211,13 @@ export default function ParcelPage() {
             {rules?.alerts?.length || 0}
           </div>
           <div className="stat-label" style={{ fontSize: 10, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{rules?.summary?.substring(0, 30)}</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label" style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            <ShieldAlert size={13} style={{ color: riskColor }} /> Governance Risk
+          </div>
+          <div className="stat-value" style={{ fontSize: 18, color: riskColor }}>{risk?.score ?? "--"}{risk ? "/100" : ""}</div>
+          <div className="stat-label">{risk ? `${risk.level} risk` : "Calculating"}</div>
         </div>
       </div>
 
@@ -304,6 +314,37 @@ export default function ParcelPage() {
                     </div>
                   ))}
                 </>
+              )}
+            </div>
+            <div className="card">
+              <h3 className="card-title" style={{ marginBottom: "var(--space-md)", display: "flex", alignItems: "center", gap: 6 }}>
+                <ShieldAlert size={16} color={riskColor} /> Explainable Governance Risk
+              </h3>
+              {risk ? (
+                <>
+                  <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, marginBottom: 12 }}>
+                    <div style={{ fontSize: 30, fontWeight: 800, color: riskColor }}>{risk.score}<span style={{ fontSize: 13, color: "var(--text-secondary)" }}>/100</span></div>
+                    <span className={`badge ${risk.level === "HIGH" ? "badge-error" : risk.level === "MEDIUM" ? "badge-warning" : "badge-success"}`}>{risk.level} RISK</span>
+                  </div>
+                  <p style={{ fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.5, marginBottom: 10 }}>{risk.recommendation}</p>
+                  <div style={{ fontSize: 11, color: "var(--text-tertiary)", marginBottom: 8 }}>Data confidence: {risk.confidence} ({risk.dataCompletenessPercent}% complete)</div>
+                  <div style={{ display: "grid", gap: 7 }}>
+                    {risk.factors.filter((factor: any) => factor.points > 0 || !factor.available).map((factor: any) => (
+                      <div key={factor.key} style={{ borderLeft: `3px solid ${factor.points > 0 ? riskColor : "var(--status-warning)"}`, paddingLeft: 8 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 11, fontWeight: 700 }}>
+                          <span>{factor.label}</span>
+                          <span>{factor.points}/{factor.maximumPoints}</span>
+                        </div>
+                        <div style={{ fontSize: 11, color: "var(--text-secondary)", lineHeight: 1.4 }}>{factor.evidence}</div>
+                      </div>
+                    ))}
+                    {risk.factors.every((factor: any) => factor.points === 0 && factor.available) && (
+                      <div style={{ fontSize: 12, color: "var(--status-success)" }}>No risk indicators were detected.</div>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <p style={{ color: "var(--text-secondary)", fontSize: 13 }}>Risk assessment is unavailable for this parcel.</p>
               )}
             </div>
           </div>
