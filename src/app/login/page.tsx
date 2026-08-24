@@ -284,9 +284,17 @@ export default function LoginPage() {
                       Registered Indian Mobile Number
                     </label>
                     <div style={{ display: "flex", alignItems: "center", border: "1px solid #cbd5e1", borderRadius: 8, overflow: "hidden", background: "#f8fafc" }}>
-                      <span style={{ padding: "0 12px", fontSize: 13, fontWeight: 700, color: "#475569", background: "#e2e8f0", borderRight: "1px solid #cbd5e1", height: 42, display: "flex", alignItems: "center" }}>
-                        🇮🇳 +91
-                      </span>
+                      <div style={{ padding: "0 14px", background: "#e2e8f0", borderRight: "1px solid #cbd5e1", height: 42, display: "inline-flex", flexDirection: "row", alignItems: "center", gap: 8, flexShrink: 0, whiteSpace: "nowrap" }}>
+                        {/* Crisp Indian Tricolor SVG */}
+                        <svg width="20" height="14" viewBox="0 0 900 600" style={{ borderRadius: 2, flexShrink: 0, boxShadow: "0 1px 3px rgba(0,0,0,0.15)" }}>
+                          <rect width="900" height="200" fill="#FF9933" />
+                          <rect y="200" width="900" height="200" fill="#FFFFFF" />
+                          <rect y="400" width="900" height="200" fill="#138808" />
+                          <circle cx="450" cy="300" r="75" fill="none" stroke="#000080" strokeWidth="12" />
+                          <circle cx="450" cy="300" r="18" fill="#000080" />
+                        </svg>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: "#334155", whiteSpace: "nowrap", letterSpacing: "0.02em" }}>+91</span>
+                      </div>
                       <input
                         type="tel"
                         value={phone}
