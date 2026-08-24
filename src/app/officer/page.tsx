@@ -86,22 +86,13 @@ export default function OfficerPortal() {
   const [parcel360, setParcel360] = useState<any | null>(null);
 
   const allowedDepts = getAllowedDepartments(currentUser?.role);
+  const [userSelectedDept, setUserSelectedDept] = useState<string | null>(null);
 
-  const [selectedDept, setSelectedDept] = useState(() => {
-    if (currentUser?.role === "REGISTRATION_OFFICER") return "Registration";
-    if (currentUser?.role === "PLANNING_OFFICER") return "Planning";
-    if (currentUser?.role === "TAX_OFFICER") return "Municipality";
-    if (currentUser?.role === "REVENUE_OFFICER") return "Revenue";
-    return "Revenue";
-  });
-
-  // Sync selectedDept if user role changes or restricts it
-  useEffect(() => {
-    const allowed = getAllowedDepartments(currentUser?.role);
-    if (!allowed.includes(selectedDept)) {
-      setSelectedDept(allowed[0]);
-    }
-  }, [currentUser?.role, selectedDept]);
+  // Derive active department cleanly without cascading effect setState
+  const selectedDept =
+    userSelectedDept && allowedDepts.includes(userSelectedDept)
+      ? userSelectedDept
+      : allowedDepts[0];
   const [actionLoading, setActionLoading] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -542,7 +533,7 @@ export default function OfficerPortal() {
           {allowedDepts.map((dept) => (
             <button
               key={dept}
-              onClick={() => setSelectedDept(dept)}
+              onClick={() => setUserSelectedDept(dept)}
               className={`btn ${selectedDept === dept ? "btn-primary" : "btn-outline"}`}
               style={{ fontSize: 12, padding: "6px 14px", flexShrink: 0 }}
             >
