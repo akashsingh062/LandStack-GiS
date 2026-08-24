@@ -11,7 +11,7 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false },
 });
 
-const DEFAULT_STAFF_PASSWORD = "";
+const DEFAULT_STAFF_PASSWORD = process.env.STAFF_DEFAULT_PASSWORD || "sih@2026";
 
 const OFFICIALS = [
   {
