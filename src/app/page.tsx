@@ -122,6 +122,7 @@ export default function Dashboard() {
               boxShadow: "0 4px 14px rgba(59, 130, 246, 0.25)",
               flexShrink: 0,
             }}
+          >
             {currentUser ? (
               React.createElement(getPersonaIcon(currentUser.icon), { size: 24, color: "#ffffff" })
             ) : (
