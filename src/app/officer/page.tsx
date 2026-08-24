@@ -242,6 +242,12 @@ export default function OfficerPortal() {
       if (res.status === 200) {
         setModalMode(null);
         setActionRemarks("");
+        if (res.data?.application) {
+          setSelectedDetail((prev: any) => ({
+            ...prev,
+            application: res.data.application,
+          }));
+        }
         await fetchApplications();
         if (selectedAppNo) await fetchDetail(selectedAppNo);
       }
@@ -1267,8 +1273,142 @@ export default function OfficerPortal() {
                 </div>
               )}
 
-              {/* Action Buttons with Department Jurisdiction Enforcement */}
-              {checkCanOfficerVerifyApplication(currentUser, app.department) ? (
+              {/* Action Buttons with Department Jurisdiction & Terminal Status Enforcement */}
+              {["APPROVED", "COMPLETED"].includes(app.status) ? (
+                <div
+                  style={{
+                    padding: "16px 20px",
+                    background: "rgba(16, 185, 129, 0.08)",
+                    border: "1px solid rgba(16, 185, 129, 0.35)",
+                    borderRadius: "var(--radius-md)",
+                    marginTop: "auto",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    flexWrap: "wrap",
+                    gap: 12,
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <div
+                      style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: "50%",
+                        background: "#10b981",
+                        color: "#fff",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontWeight: 900,
+                      }}
+                    >
+                      ✓
+                    </div>
+                    <div>
+                      <div
+                        style={{
+                          fontSize: 14,
+                          fontWeight: 800,
+                          color: "#065f46",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 8,
+                        }}
+                      >
+                        <span>Final Statutory Sanction Granted & Order Certified</span>
+                        <span
+                          className="badge badge-success"
+                          style={{ fontSize: 10, padding: "2px 8px" }}
+                        >
+                          Order Active
+                        </span>
+                      </div>
+                      <div
+                        style={{
+                          fontSize: 12,
+                          color: "var(--text-secondary)",
+                          marginTop: 2,
+                        }}
+                      >
+                        {app.current_step ||
+                          "All departmental statutory clearances and title verifications completed."}
+                      </div>
+                    </div>
+                  </div>
+                  <Link
+                    href="/applications"
+                    className="btn btn-outline"
+                    style={{
+                      fontSize: 12,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6,
+                    }}
+                  >
+                    <FileSignature size={14} /> View Digital Certificate
+                  </Link>
+                </div>
+              ) : app.status === "REJECTED" ? (
+                <div
+                  style={{
+                    padding: "16px 20px",
+                    background: "rgba(239, 68, 68, 0.08)",
+                    border: "1px solid rgba(239, 68, 68, 0.35)",
+                    borderRadius: "var(--radius-md)",
+                    marginTop: "auto",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 12,
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: "50%",
+                      background: "#ef4444",
+                      color: "#fff",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontWeight: 900,
+                    }}
+                  >
+                    ✕
+                  </div>
+                  <div>
+                    <div
+                      style={{
+                        fontSize: 14,
+                        fontWeight: 800,
+                        color: "#991b1b",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                      }}
+                    >
+                      <span>Application Statutorily Rejected</span>
+                      <span
+                        className="badge badge-error"
+                        style={{ fontSize: 10, padding: "2px 8px" }}
+                      >
+                        Closed
+                      </span>
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 12,
+                        color: "var(--text-secondary)",
+                        marginTop: 2,
+                      }}
+                    >
+                      {app.current_step ||
+                        "Rejected by reviewing authority due to statutory non-compliance."}
+                    </div>
+                  </div>
+                </div>
+              ) : checkCanOfficerVerifyApplication(currentUser, app.department) ? (
                 <div
                   style={{
                     display: "flex",
@@ -1513,7 +1653,11 @@ export default function OfficerPortal() {
                   fontSize: 12,
                   marginBottom: 16,
                 }}
-                placeholder="Enter remarks or statutory verification notes..."
+                placeholder={
+                  modalMode === "REJECT"
+                    ? "Enter specific statutory grounds for rejection (or leave default)..."
+                    : "Enter remarks or statutory verification notes..."
+                }
                 value={actionRemarks}
                 onChange={(e) => setActionRemarks(e.target.value)}
               />
@@ -1523,17 +1667,27 @@ export default function OfficerPortal() {
               >
                 <button
                   className="btn btn-outline"
-                  onClick={() => setModalMode(null)}
+                  onClick={() => {
+                    setModalMode(null);
+                    setActionRemarks("");
+                  }}
                   disabled={actionLoading}
                 >
                   Cancel
                 </button>
                 <button
-                  className="btn btn-primary"
-                  disabled={
-                    actionLoading ||
-                    (modalMode === "REJECT" && !actionRemarks.trim())
+                  className={`btn ${modalMode === "REJECT" ? "btn-danger" : "btn-primary"}`}
+                  style={
+                    modalMode === "REJECT"
+                      ? {
+                          background: "#dc2626",
+                          borderColor: "#b91c1c",
+                          color: "#ffffff",
+                          fontWeight: 700,
+                        }
+                      : undefined
                   }
+                  disabled={actionLoading}
                   onClick={() => {
                     if (modalMode === "APPROVE")
                       executeAction(
@@ -1542,7 +1696,11 @@ export default function OfficerPortal() {
                           "Stage scrutiny completed and verified.",
                       );
                     if (modalMode === "REJECT")
-                      executeAction("REJECT", actionRemarks);
+                      executeAction(
+                        "REJECT",
+                        actionRemarks ||
+                          "Application rejected due to statutory document non-compliance / failed scrutiny.",
+                      );
                     if (modalMode === "REQUEST_INFO")
                       executeAction(
                         "REQUEST_INFO",
@@ -1557,8 +1715,10 @@ export default function OfficerPortal() {
                   }}
                 >
                   {actionLoading
-                    ? "Processing Transition..."
-                    : "Confirm & Route Action"}
+                    ? "Processing..."
+                    : modalMode === "REJECT"
+                      ? "Confirm & Reject Application"
+                      : "Confirm & Route Action"}
                 </button>
               </div>
             </motion.div>
