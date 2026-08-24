@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useCallback, useSyncExternalStore } from "react";
+import { useRouter } from "next/navigation";
 import { UserRole, UserType, Permission } from "./types";
 import { ROLE_PERMISSIONS } from "./rbac-matrix";
 import { UserPersona, DEMO_PERSONAS } from "./personas";
@@ -294,12 +295,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [saveUserSession]
   );
 
+  const router = useRouter();
+
   const logout = useCallback(() => {
     saveUserSession(null);
-    if (typeof window !== "undefined") {
-      window.location.href = "/login";
-    }
-  }, [saveUserSession]);
+    router.push("/login");
+  }, [saveUserSession, router]);
 
   const hasPermission = useCallback(
     (permission: Permission): boolean => {
