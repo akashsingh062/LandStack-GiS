@@ -45,8 +45,7 @@ function Sidebar({ isOpen, onClose, isOverlay }: { isOpen: boolean; onClose: () 
   const { currentUser, getInitials, isMounted, logout } = useAuth();
   const { t } = useLanguage();
   const activeUser = isMounted ? currentUser : null;
-  const role = activeUser?.role || "CITIZEN";
-  const navSections = getFilteredNavSections(role);
+  const navSections = getFilteredNavSections(activeUser?.role || null);
 
   return (
     <>

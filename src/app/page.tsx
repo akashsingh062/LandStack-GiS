@@ -207,7 +207,42 @@ export default function Dashboard() {
       </motion.div>
 
       {/* ROLE SPECIFIC STATS GRID */}
-      {role === "CITIZEN" && (
+      {!currentUser && (
+        <motion.div
+          className="stat-grid"
+          style={{ marginBottom: "var(--space-lg)" }}
+          initial="initial"
+          animate="animate"
+          variants={{
+            initial: {},
+            animate: { transition: { staggerChildren: 0.08 } },
+          }}
+        >
+          {[
+            { icon: <Lucide.MapPin size={20} />, value: String(stats?.overview.total_parcels || 300), label: "Verified Cadastral Parcels", bg: "var(--status-info-bg)", desc: "Basopatti, Madhubani (BR-10)" },
+            { icon: <Lucide.FileText size={20} />, value: String(stats?.overview.total_ror_records || 300), label: "Jamabandi RoR Records", bg: "var(--status-success-bg)", desc: "100% Digitized Land Khatiyan" },
+            { icon: <Lucide.Layers size={20} />, value: String(stats?.spatial.master_plan_zones || 12), label: "Planning & Restriction Zones", bg: "rgba(139,92,246,0.12)", desc: "Master Plan 2035 Compliant" },
+            { icon: <Lucide.ShieldCheck size={20} />, value: "100%", label: "Digital Public Infrastructure", bg: "var(--status-warning-bg)", desc: "Open Search & GIS Layers" },
+          ].map((s) => (
+            <motion.div
+              key={s.label}
+              className="stat-card"
+              variants={{
+                initial: { opacity: 0, y: 12 },
+                animate: { opacity: 1, y: 0 },
+              }}
+              whileHover={{ y: -4, transition: { duration: 0.18 } }}
+            >
+              <div className="stat-icon" style={{ background: s.bg }}>{s.icon}</div>
+              <div className="stat-value">{s.value}</div>
+              <div className="stat-label">{s.label}</div>
+              <div style={{ fontSize: 11, color: "var(--text-tertiary)", marginTop: 4 }}>{s.desc}</div>
+            </motion.div>
+          ))}
+        </motion.div>
+      )}
+
+      {currentUser && role === "CITIZEN" && (
         <motion.div
           className="stat-grid"
           style={{ marginBottom: "var(--space-lg)" }}
@@ -242,7 +277,7 @@ export default function Dashboard() {
         </motion.div>
       )}
 
-      {role === "REVENUE_OFFICER" && (
+      {currentUser && role === "REVENUE_OFFICER" && (
         <motion.div
           className="stat-grid"
           style={{ marginBottom: "var(--space-lg)" }}
@@ -277,7 +312,7 @@ export default function Dashboard() {
         </motion.div>
       )}
 
-      {role === "REGISTRATION_OFFICER" && (
+      {currentUser && role === "REGISTRATION_OFFICER" && (
         <motion.div
           className="stat-grid"
           style={{ marginBottom: "var(--space-lg)" }}
@@ -312,7 +347,7 @@ export default function Dashboard() {
         </motion.div>
       )}
 
-      {role === "PLANNING_OFFICER" && (
+      {currentUser && role === "PLANNING_OFFICER" && (
         <motion.div
           className="stat-grid"
           style={{ marginBottom: "var(--space-lg)" }}
@@ -347,7 +382,7 @@ export default function Dashboard() {
         </motion.div>
       )}
 
-      {role === "TAX_OFFICER" && (
+      {currentUser && role === "TAX_OFFICER" && (
         <motion.div
           className="stat-grid"
           style={{ marginBottom: "var(--space-lg)" }}
@@ -382,7 +417,7 @@ export default function Dashboard() {
         </motion.div>
       )}
 
-      {(role === "ADMIN" || role === "AUDITOR") && (
+      {currentUser && (role === "ADMIN" || role === "AUDITOR") && (
         <motion.div
           className="stat-grid"
           style={{ marginBottom: "var(--space-lg)" }}
@@ -425,7 +460,13 @@ export default function Dashboard() {
         transition={{ duration: 0.3 }}
         style={{ marginBottom: "var(--space-md)", fontSize: 16 }}
       >
-        {role === "CITIZEN" ? t("section.citizen_services") : role === "ADMIN" || role === "AUDITOR" ? "System Governance & Security Hub" : "Department Operational Actions"}
+        {!currentUser
+          ? "Public Spatial & Cadastre Services"
+          : role === "CITIZEN"
+            ? t("section.citizen_services")
+            : role === "ADMIN" || role === "AUDITOR"
+              ? "System Governance & Security Hub"
+              : "Department Operational Actions"}
       </motion.h3>
 
       <motion.div
@@ -438,7 +479,29 @@ export default function Dashboard() {
           animate: { transition: { staggerChildren: 0.06 } },
         }}
       >
-        {role === "CITIZEN" && [
+        {!currentUser && [
+          { icon: <Lucide.Map size={24} color="var(--brand-primary)" />, name: "Cadastral GIS Map", desc: "Interactive spatial inspection of survey plots & boundaries", href: "/map" },
+          { icon: <Lucide.Search size={24} color="var(--brand-primary)" />, name: "Universal Land Search", desc: "Search parcels by ULPIN, Survey Plot, Owner Name or Khata", href: "/search" },
+          { icon: <Lucide.Layers size={24} color="var(--brand-primary)" />, name: "Planning & Restriction Layers", desc: "Explore land-use zoning, master plans, and environmental buffers", href: "/map" },
+          { icon: <Lucide.KeyRound size={24} color="var(--brand-primary)" />, name: "Citizen & Staff Login", desc: "Authenticate with OTP or staff credentials for land services", href: "/login" },
+        ].map((s) => (
+          <motion.div
+            key={s.name}
+            variants={{
+              initial: { opacity: 0, y: 14 },
+              animate: { opacity: 1, y: 0 },
+            }}
+            whileHover={{ y: -4, scale: 1.02, transition: { duration: 0.18 } }}
+          >
+            <Link href={s.href} className="service-card" style={{ height: "100%", textDecoration: "none" }}>
+              <div className="service-icon">{s.icon}</div>
+              <div className="service-name">{s.name}</div>
+              <div className="service-desc">{s.desc}</div>
+            </Link>
+          </motion.div>
+        ))}
+
+        {currentUser && role === "CITIZEN" && [
           { icon: <Lucide.Map size={24} color="var(--brand-primary)" />, name: t("service.my_parcels"), desc: t("service.my_parcels_desc"), href: "/map" },
           { icon: <Lucide.FileText size={24} color="var(--brand-primary)" />, name: t("service.ror_extract"), desc: t("service.ror_extract_desc"), href: "/services/ror-extract" },
           { icon: <Lucide.FileSignature size={24} color="var(--brand-primary)" />, name: t("service.apply_mutation"), desc: t("service.apply_mutation_desc"), href: "/services/mutation" },
@@ -462,11 +525,11 @@ export default function Dashboard() {
           </motion.div>
         ))}
 
-        {role === "REVENUE_OFFICER" && [
+        {currentUser && role === "REVENUE_OFFICER" && [
           { icon: <Lucide.Briefcase size={24} color="var(--brand-primary)" />, name: "Mutation Approval Desk", desc: "Inspect Jamabandi & approve title transfer", href: "/officer" },
           { icon: <Lucide.AlertTriangle size={24} color="var(--status-warning)" />, name: "Boundary Dispute Resolver", desc: "Resolve 3 active spatial parcel overlaps", href: "/officer/conflicts" },
           { icon: <Lucide.Map size={24} color="var(--brand-primary)" />, name: "Cadastral Survey Map", desc: "Inspect 300 organic agricultural parcels", href: "/map" },
-          { icon: <Lucide.FileText size={24} color="var(--brand-primary)" />, name: "Jamabandi RoR Audit", desc: "Verify revenue khata & lagan records", href: "/services/ror-extract" },
+          { icon: <Lucide.Search size={24} color="var(--brand-primary)" />, name: "Jamabandi Khatiyan Search", desc: "Verify revenue khata & lagan records", href: "/search" },
         ].map((s) => (
           <motion.div
             key={s.name}
@@ -484,9 +547,9 @@ export default function Dashboard() {
           </motion.div>
         ))}
 
-        {role === "REGISTRATION_OFFICER" && [
-          { icon: <Lucide.FileSignature size={24} color="var(--brand-primary)" />, name: "Registration Queue", desc: "Verify registered sale deeds & stamps", href: "/officer?dept=Registration" },
-          { icon: <Lucide.ShieldCheck size={24} color="var(--brand-primary)" />, name: "Issue Non-Encumbrance", desc: "Generate certified search certificate", href: "/services/encumbrance-certificate" },
+        {currentUser && role === "REGISTRATION_OFFICER" && [
+          { icon: <Lucide.FileSignature size={24} color="var(--brand-primary)" />, name: "Registration Queue", desc: "Verify registered sale deeds & stamps", href: "/officer" },
+          { icon: <Lucide.Search size={24} color="var(--brand-primary)" />, name: "Registry Deed Search", desc: "Search deed index and encumbrance records", href: "/search" },
           { icon: <Lucide.Landmark size={24} color="var(--brand-primary)" />, name: "Bank Mortgage Registry", desc: "Review bank collateral charge filings", href: "/officer" },
           { icon: <Lucide.Map size={24} color="var(--brand-primary)" />, name: "Cadastral Verification", desc: "Cross-check deed geometry on GIS", href: "/map" },
         ].map((s) => (
@@ -506,8 +569,8 @@ export default function Dashboard() {
           </motion.div>
         ))}
 
-        {role === "PLANNING_OFFICER" && [
-          { icon: <Lucide.Building2 size={24} color="var(--brand-primary)" />, name: "Building Plan Desk", desc: "Sanction residential & commercial plans", href: "/officer?dept=Planning" },
+        {currentUser && role === "PLANNING_OFFICER" && [
+          { icon: <Lucide.Building2 size={24} color="var(--brand-primary)" />, name: "Building Plan Desk", desc: "Sanction residential & commercial plans", href: "/officer" },
           { icon: <Lucide.Compass size={24} color="var(--brand-primary)" />, name: "Master Plan 2035 GIS", desc: "Evaluate zoning and land-use compliance", href: "/map" },
           { icon: <Lucide.Trees size={24} color="var(--brand-primary)" />, name: "Environmental Buffer Audit", desc: "Verify river & canal setback zones", href: "/map" },
           { icon: <Lucide.Sparkles size={24} color="var(--brand-primary)" />, name: "AI Geospatial Change", desc: "Satellite change detection radar", href: "/admin/intelligence" },
@@ -528,9 +591,9 @@ export default function Dashboard() {
           </motion.div>
         ))}
 
-        {role === "TAX_OFFICER" && [
-          { icon: <Lucide.ReceiptText size={24} color="var(--brand-primary)" />, name: "Municipal Tax Desk", desc: "Review property tax assessments", href: "/officer?dept=Taxation" },
-          { icon: <Lucide.Wallet size={24} color="var(--brand-primary)" />, name: "Issue Demand Notices", desc: "Generate payment challans & receipts", href: "/services/property-tax" },
+        {currentUser && role === "TAX_OFFICER" && [
+          { icon: <Lucide.ReceiptText size={24} color="var(--brand-primary)" />, name: "Municipal Tax Desk", desc: "Review property tax assessments", href: "/officer" },
+          { icon: <Lucide.Search size={24} color="var(--brand-primary)" />, name: "Tax Assessment Search", desc: "Search property tax records & demand notes", href: "/search" },
           { icon: <Lucide.Map size={24} color="var(--brand-primary)" />, name: "GIS Property Mapping", desc: "Audit built-up footprint vs tax slab", href: "/map" },
           { icon: <Lucide.AlertCircle size={24} color="var(--status-warning)" />, name: "Arrears & Defaulters", desc: "Track high-value municipal arrears", href: "/officer" },
         ].map((s) => (
@@ -550,7 +613,7 @@ export default function Dashboard() {
           </motion.div>
         ))}
 
-        {(role === "ADMIN" || role === "AUDITOR") && [
+        {currentUser && (role === "ADMIN" || role === "AUDITOR") && [
           { icon: <Lucide.Shield size={24} color="var(--brand-primary)" />, name: "Audit Trail Ledger", desc: "Verify SHA-256 cryptographic chain integrity", href: "/admin/security" },
           { icon: <Lucide.Plug size={24} color="var(--brand-primary)" />, name: "Interoperability Adapters", desc: "Manage state land registry connectors", href: "/admin/adapters" },
           { icon: <Lucide.Handshake size={24} color="var(--brand-primary)" />, name: "DPDPA Consents", desc: "Purpose-bound citizen access logs", href: "/admin/security" },
@@ -588,14 +651,61 @@ export default function Dashboard() {
         <div className="card">
           <div className="card-header">
             <h3 className="card-title">
-              {role === "CITIZEN" ? t("service.track_apps") : "Pending Jurisdiction Workflows"}
+              {!currentUser
+                ? "Public Land Governance Overview"
+                : role === "CITIZEN"
+                  ? t("service.track_apps")
+                  : "Pending Jurisdiction Workflows"}
             </h3>
-            <Link href={role === "CITIZEN" ? "/applications" : "/officer"} style={{ fontSize: 12, color: "var(--brand-primary)", textDecoration: "none", fontWeight: 600 }}>
-              View All →
-            </Link>
+            {currentUser && (
+              <Link
+                href={role === "CITIZEN" ? "/applications" : "/officer"}
+                style={{
+                  fontSize: 12,
+                  color: "var(--brand-primary)",
+                  textDecoration: "none",
+                  fontWeight: 600,
+                }}
+              >
+                View All →
+              </Link>
+            )}
           </div>
 
-          {citizenApps.length === 0 ? (
+          {!currentUser ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <div
+                style={{
+                  padding: "12px 14px",
+                  background: "var(--bg-input)",
+                  borderRadius: "var(--radius-md)",
+                  border: "1px solid var(--border-default)",
+                }}
+              >
+                <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)" }}>
+                  Open Spatial & Cadastral Transparency
+                </div>
+                <div style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 4 }}>
+                  Browse 300 survey parcels with geometric boundaries and revenue details without authentication.
+                </div>
+              </div>
+              <div
+                style={{
+                  padding: "12px 14px",
+                  background: "var(--bg-input)",
+                  borderRadius: "var(--radius-md)",
+                  border: "1px solid var(--border-default)",
+                }}
+              >
+                <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)" }}>
+                  Statutory Department Interoperability
+                </div>
+                <div style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 4 }}>
+                  Real-time pipeline integration connecting Revenue, Registration, Planning, and Municipality.
+                </div>
+              </div>
+            </div>
+          ) : citizenApps.length === 0 ? (
             <div style={{ padding: "var(--space-md)", textAlign: "center", color: "var(--text-tertiary)" }}>
               No active applications found.
             </div>

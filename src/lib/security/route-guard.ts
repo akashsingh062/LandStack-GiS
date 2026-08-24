@@ -52,15 +52,15 @@ export const ALL_NAV_SECTIONS: NavSection[] = [
   {
     label: "Citizen Services",
     items: [
-      { href: "/services", icon: "ClipboardList", label: "Services", allowedRoles: ["CITIZEN", "ADMIN", "SUPER_ADMIN"] },
-      { href: "/applications", icon: "FileText", label: "My Applications", allowedRoles: ["CITIZEN", "ADMIN", "SUPER_ADMIN"] },
+      { href: "/services", icon: "ClipboardList", label: "Services", allowedRoles: ["CITIZEN"] },
+      { href: "/applications", icon: "FileText", label: "My Applications", allowedRoles: ["CITIZEN"] },
     ],
   },
   {
     label: "Department Governance",
     items: [
       { href: "/officer", icon: "Briefcase", label: "Officer Portal", allowedRoles: OFFICER_ROLES },
-      { href: "/officer/conflicts", icon: "AlertTriangle", label: "Data Conflicts", badge: "3", allowedRoles: [...OFFICER_ROLES, "AUDITOR"] },
+      { href: "/officer/conflicts", icon: "AlertTriangle", label: "Data Conflicts", badge: "3", allowedRoles: ["REVENUE_OFFICER", "PLANNING_OFFICER", "ADMIN", "SUPER_ADMIN", "AUDITOR"] },
     ],
   },
   {
@@ -85,7 +85,7 @@ export const ROUTE_ACCESS_RULES: { prefix: string; exact?: boolean; allowedRoles
   { prefix: "/", exact: true, allowedRoles: ALL_ROLES },
   { prefix: "/services", allowedRoles: ["CITIZEN", "ADMIN", "SUPER_ADMIN"] },
   { prefix: "/applications", allowedRoles: ["CITIZEN", "ADMIN", "SUPER_ADMIN"] },
-  { prefix: "/officer/conflicts", allowedRoles: [...OFFICER_ROLES, "AUDITOR"] },
+  { prefix: "/officer/conflicts", allowedRoles: ["REVENUE_OFFICER", "PLANNING_OFFICER", "ADMIN", "SUPER_ADMIN", "AUDITOR"] },
   { prefix: "/officer", allowedRoles: OFFICER_ROLES },
   { prefix: "/admin/intelligence", allowedRoles: ["ADMIN", "SUPER_ADMIN", "PLANNING_OFFICER", "REVENUE_OFFICER"] },
   { prefix: "/admin/security", allowedRoles: ["ADMIN", "SUPER_ADMIN", "AUDITOR"] },
@@ -97,7 +97,7 @@ export const ROUTE_ACCESS_RULES: { prefix: string; exact?: boolean; allowedRoles
 /**
  * Checks if a given pathname is allowed for a user role
  */
-export function checkRouteAccess(pathname: string, role: UserRole): {
+export function checkRouteAccess(pathname: string, role?: UserRole | null): {
   allowed: boolean;
   requiredRoles: UserRole[];
 } {
@@ -109,6 +109,17 @@ export function checkRouteAccess(pathname: string, role: UserRole): {
     pathname.includes(".")
   ) {
     return { allowed: true, requiredRoles: ALL_ROLES };
+  }
+
+  // Public routes allowed for unauthenticated guests
+  const publicRoutes = ["/", "/login", "/map", "/search", "/parcel"];
+  const isPublic = publicRoutes.some(p => p === "/" ? pathname === "/" : pathname === p || pathname.startsWith(p + "/"));
+
+  if (!role) {
+    return {
+      allowed: isPublic,
+      requiredRoles: ALL_ROLES,
+    };
   }
 
   // Find most specific matching rule (sorted by longest prefix first)
@@ -136,7 +147,21 @@ export function checkRouteAccess(pathname: string, role: UserRole): {
 /**
  * Returns filtered navigation sections containing only routes accessible by the current role
  */
-export function getFilteredNavSections(role: UserRole): NavSection[] {
+export function getFilteredNavSections(role?: UserRole | null): NavSection[] {
+  if (!role) {
+    // Guest/Public: Only show public discovery links!
+    return [
+      {
+        label: "Main",
+        items: [
+          { href: "/", icon: "Home", label: "Dashboard", allowedRoles: ALL_ROLES },
+          { href: "/map", icon: "Map", label: "GIS Map", allowedRoles: ALL_ROLES },
+          { href: "/search", icon: "Search", label: "Search Land", allowedRoles: ALL_ROLES },
+        ],
+      },
+    ];
+  }
+
   return ALL_NAV_SECTIONS.map((section) => ({
     label: section.label,
     items: section.items.filter((item) => item.allowedRoles.includes(role)),
