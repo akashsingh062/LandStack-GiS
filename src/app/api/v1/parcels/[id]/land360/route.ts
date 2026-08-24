@@ -17,7 +17,8 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { withClient } from "@/lib/db";
-import { evaluateRules } from "@/lib/rules-engine";
+import { evaluateRules, scoreParcelRisk } from "@/lib/rules-engine";
+import { normalizeArea } from "@/lib/adapters/unit-normalizer";
 
 export async function GET(
   request: NextRequest,
@@ -58,7 +59,7 @@ export async function GET(
       const masterPlan = await client.query(`SELECT mp.zone_id, mp.zone_code, mp.zone_name, mp.permitted_use, mp.max_far, mp.max_height_m FROM gis.master_plan_zones mp WHERE ST_Intersects(mp.geom, (SELECT geom FROM gis.parcels WHERE parcel_id = $1::uuid))`, [id]);
       const restrictions = await client.query(`SELECT rz.restriction_id, rz.restriction_type, rz.restriction_name, rz.severity, rz.description FROM gis.restriction_zones rz WHERE ST_Intersects(rz.geom, (SELECT geom FROM gis.parcels WHERE parcel_id = $1::uuid))`, [id]);
 
-    // 3. Rules Engine
+    // 3. Rules & Risk Evaluation
     const rulesResult = evaluateRules({
       landUse: landUse.rows.map((r: { zone_name: string }) => r.zone_name),
       masterPlan: masterPlan.rows.map((r: { zone_name: string }) => r.zone_name),
@@ -67,6 +68,31 @@ export async function GET(
       buildingPermissions: buildingPerms.rows.map((r: { status: string; expiry_date: string }) => ({ status: r.status, expiry_date: r.expiry_date })),
       disputes: disputes.rows.map((r: { status: string }) => ({ status: r.status })),
       ror: ror.rows[0] ? { revenue_status: ror.rows[0].revenue_status } : null,
+    });
+
+    const cadastralAreaSqm = parcel.area == null ? null : normalizeArea(parcel.area, parcel.area_unit).area_sq_m;
+    const rorAreaSqm = ror.rows[0]?.area == null
+      ? null
+      : normalizeArea(ror.rows[0].area, ror.rows[0].area_unit).area_sq_m;
+
+    const riskEvaluation = scoreParcelRisk({
+      parcelId: parcel.ulpin || String(parcel.parcel_id),
+      surveyNumber: parcel.survey_number,
+      cadastralAreaSqm,
+      rorAreaSqm,
+      landType: parcel.land_type,
+      ownerCount: ownership.rows.length,
+      hasRor: ror.rows.length > 0,
+      disputes: disputes.rows,
+      encumbrances: encumbrances.rows,
+      landUseZones: landUse.rows,
+      masterPlanZones: masterPlan.rows,
+      restrictionZones: restrictions.rows,
+      buildingPermissions: buildingPerms.rows,
+      conflicts: conflicts.rows,
+      taxes: tax.rows,
+      centroidLng: parcel.centroid_lng,
+      centroidLat: parcel.centroid_lat,
     });
 
     // 4. Aggregate response
@@ -85,6 +111,8 @@ export async function GET(
         restrictions: restrictions.rows,
       },
       rules_evaluation: rulesResult,
+      risk_evaluation: riskEvaluation,
+      risk_profile: riskEvaluation,
       conflicts: conflicts.rows,
       integration: {
         matches: matchInfo.rows,

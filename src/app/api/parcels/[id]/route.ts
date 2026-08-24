@@ -106,25 +106,31 @@ export async function GET(
     const rorAreaSqm = ror.rows[0]?.area == null
       ? null
       : normalizeArea(ror.rows[0].area, ror.rows[0].area_unit).area_sq_m;
-    const taxArrearsYears = tax.rows.length === 0
-      ? null
-      : tax.rows.filter((taxRecord: { due_amount?: number; arrears?: number; status?: string }) =>
-        Number(taxRecord.due_amount || 0) > 0 || Number(taxRecord.arrears || 0) > 0 || (taxRecord.status || "").toUpperCase() === "PENDING",
-      ).length;
     const riskEvaluation = scoreParcelRisk({
       parcelId: parcel.ulpin || String(parcel.parcel_id),
+      surveyNumber: parcel.survey_number,
       cadastralAreaSqm,
       rorAreaSqm,
+      landType: parcel.land_type,
+      ownerCount: ownership.rows.length,
       ownerMatch: hasConflict("OWNERSHIP_MISMATCH", "OWNER_NAME_MISMATCH")
         ? false
         : ownership.rows.length > 0 && registrations.rows.length > 0
           ? true
           : null,
+      hasRor: ror.rows.length > 0,
       mutationPendingDays: pendingMutationDays,
-      encumbrance: hasDisputedEncumbrance ? "disputed" : hasActiveEncumbrance ? "active" : "none",
-      taxArrearsYears,
-      landUseViolation: hasConflict("LAND_USE_VIOLATION", "UNAUTHORIZED_DEVELOPMENT"),
+      disputes: disputes.rows,
+      encumbrances: encumbrances.rows,
+      landUseZones: landUse.rows,
+      masterPlanZones: masterPlan.rows,
+      restrictionZones: restrictions.rows,
+      buildingPermissions: buildingPerms.rows,
+      conflicts: conflicts.rows,
       duplicateIdentifier: Boolean(duplicateIdentifiers.rows[0]?.has_duplicate),
+      taxes: tax.rows,
+      centroidLng: parcel.centroid_lng,
+      centroidLat: parcel.centroid_lat,
     });
 
     const layersConnected = [
@@ -155,6 +161,7 @@ export async function GET(
         },
         rules_evaluation: rulesResult,
         risk_evaluation: riskEvaluation,
+        risk_profile: riskEvaluation,
         conflicts: conflicts.rows,
         integration: {
           matches: matchInfo.rows,
