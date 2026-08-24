@@ -9,7 +9,9 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import apiClient from "@/lib/api-client";
 import { useAuth } from "@/lib/security/auth-context";
 import { useLanguage } from "@/lib/i18n/language-context";
+import { useSidebar } from "@/lib/sidebar-context";
 import {
+  Menu,
   Search,
   Layers,
   SlidersHorizontal,
@@ -153,11 +155,13 @@ function MapContent() {
   const cachedGeoJson = useRef<any>(null);
   const cachedSpatialLayers = useRef<Record<string, any>>({});
 
+  const { toggleSidebar, isOpen: isSidebarOpen } = useSidebar();
+
   // States
   const [selectedParcel, setSelectedParcel] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<"overview" | "ownership" | "documents" | "history">("overview");
-  const [showLayers, setShowLayers] = useState(true);
+  const [showLayers, setShowLayers] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
@@ -703,44 +707,89 @@ function MapContent() {
     <div style={{ display: "flex", flexDirection: "column", height: "100%", width: "100%", background: "var(--bg-app, #ffffff)", color: "var(--text-primary, #0F172A)", overflow: "hidden", fontFamily: "Inter, -apple-system, sans-serif", position: "relative" }}>
       {/* 1. Map Top Toolbar */}
       <header style={{ minHeight: isMobile ? 48 : 54, background: "#ffffff", borderBottom: "1px solid #e2e8f0", display: "flex", alignItems: "center", justifyContent: "space-between", padding: isMobile ? "6px 10px" : "0 16px", zIndex: 30, gap: 8 }}>
-        {/* Search Input */}
-        <div style={{ flex: 1, minWidth: 140, maxWidth: 500, position: "relative" }}>
-          <div style={{ display: "flex", alignItems: "center", background: "#f1f5f9", border: "1px solid #cbd5e1", borderRadius: 8, padding: "5px 10px", gap: 6 }}>
-            <Search size={14} style={{ color: "#64748b", flexShrink: 0 }} />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
-                handleSearch(e.target.value);
-              }}
-              placeholder={isMobile ? "Search ULPIN / Plot..." : "Search ULPIN, Survey No., Owner Name, Location..."}
-              style={{ background: "transparent", border: "none", outline: "none", color: "#0f172a", fontSize: 12, width: "100%" }}
-            />
-          </div>
+        {/* Left: Navigation Hamburger & Search Input */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, minWidth: 140, maxWidth: 540 }}>
+          {/* Main Navigation Hamburger Button */}
+          <button
+            onClick={toggleSidebar}
+            title="Open Main Navigation Menu"
+            aria-label="Toggle navigation menu"
+            style={{
+              background: isSidebarOpen ? "#0284c7" : "#f1f5f9",
+              border: isSidebarOpen ? "1px solid #0284c7" : "1px solid #cbd5e1",
+              color: isSidebarOpen ? "#ffffff" : "#0f172a",
+              padding: isMobile ? "6px 9px" : "6px 12px",
+              borderRadius: 8,
+              fontSize: isMobile ? 12 : 13,
+              fontWeight: 700,
+              display: "flex",
+              alignItems: "center",
+              gap: 7,
+              cursor: "pointer",
+              flexShrink: 0,
+              transition: "all 0.15s ease",
+              boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
+            }}
+            onMouseEnter={(e) => {
+              if (!isSidebarOpen) {
+                e.currentTarget.style.background = "#e2e8f0";
+                e.currentTarget.style.borderColor = "#94a3b8";
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isSidebarOpen) {
+                e.currentTarget.style.background = "#f1f5f9";
+                e.currentTarget.style.borderColor = "#cbd5e1";
+              }
+            }}
+          >
+            <Menu size={18} style={{ color: isSidebarOpen ? "#ffffff" : "#0f172a" }} />
+            {!isMobile && (
+              <span style={{ fontWeight: 800, color: isSidebarOpen ? "#ffffff" : "var(--brand-primary, #0284c7)", letterSpacing: "-0.02em" }}>
+                LandStack
+              </span>
+            )}
+          </button>
 
-          {/* Search Dropdown */}
-          {showSearchDropdown && searchResults.length > 0 && (
-            <div style={{ position: "absolute", top: "100%", left: 0, right: 0, marginTop: 4, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 8, overflow: "hidden", zIndex: 100, boxShadow: "0 8px 24px rgba(0,0,0,0.12)" }}>
-              {searchResults.map((r) => (
-                <div
-                  key={r.parcel_id}
-                  onClick={() => flyToSearchResult(r)}
-                  style={{ padding: "8px 12px", borderBottom: "1px solid #f1f5f9", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = "#f8fafc")}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-                >
-                  <div>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: "#0284c7" }}>{r.ulpin}</div>
-                    <div style={{ fontSize: 10, color: "#64748b" }}>Survey #{r.survey_number} • {r.owner_name || "Bihar Land"}</div>
-                  </div>
-                  <span style={{ fontSize: 9, padding: "2px 6px", borderRadius: 4, background: (LAND_TYPE_COLORS[r.land_type] || "#3b82f6") + "22", color: LAND_TYPE_COLORS[r.land_type] || "#0284c7", border: `1px solid ${LAND_TYPE_COLORS[r.land_type] || "#0284c7"}55` }}>
-                    {r.land_type}
-                  </span>
-                </div>
-              ))}
+          {/* Search Input */}
+          <div style={{ flex: 1, position: "relative" }}>
+            <div style={{ display: "flex", alignItems: "center", background: "#f1f5f9", border: "1px solid #cbd5e1", borderRadius: 8, padding: "5px 10px", gap: 6 }}>
+              <Search size={14} style={{ color: "#64748b", flexShrink: 0 }} />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  handleSearch(e.target.value);
+                }}
+                placeholder={isMobile ? "Search ULPIN / Plot..." : "Search ULPIN, Survey No., Owner Name, Location..."}
+                style={{ background: "transparent", border: "none", outline: "none", color: "#0f172a", fontSize: 12, width: "100%" }}
+              />
             </div>
-          )}
+
+            {/* Search Dropdown */}
+            {showSearchDropdown && searchResults.length > 0 && (
+              <div style={{ position: "absolute", top: "100%", left: 0, right: 0, marginTop: 4, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 8, overflow: "hidden", zIndex: 100, boxShadow: "0 8px 24px rgba(0,0,0,0.12)" }}>
+                {searchResults.map((r) => (
+                  <div
+                    key={r.parcel_id}
+                    onClick={() => flyToSearchResult(r)}
+                    style={{ padding: "8px 12px", borderBottom: "1px solid #f1f5f9", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = "#f8fafc")}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                  >
+                    <div>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: "#0284c7" }}>{r.ulpin}</div>
+                      <div style={{ fontSize: 10, color: "#64748b" }}>Survey #{r.survey_number} • {r.owner_name || "Bihar Land"}</div>
+                    </div>
+                    <span style={{ fontSize: 9, padding: "2px 6px", borderRadius: 4, background: (LAND_TYPE_COLORS[r.land_type] || "#3b82f6") + "22", color: LAND_TYPE_COLORS[r.land_type] || "#0284c7", border: `1px solid ${LAND_TYPE_COLORS[r.land_type] || "#0284c7"}55` }}>
+                      {r.land_type}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Right: Actions */}
