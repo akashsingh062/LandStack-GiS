@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { useAuth } from "@/lib/security/auth-context";
 import { DEPARTMENTS } from "@/lib/security/departments";
 import { useLanguage } from "@/lib/i18n/language-context";
@@ -269,7 +270,20 @@ function LoginPageContent() {
           zIndex: 50,
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <Link
+          href="/"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            textDecoration: "none",
+            color: "inherit",
+            cursor: "pointer",
+            transition: "opacity 0.15s ease",
+          }}
+          className="hover:opacity-80"
+          title="Return to LandStack Home Dashboard"
+        >
           <div
             style={{
               width: 40,
@@ -281,6 +295,7 @@ function LoginPageContent() {
               justifyContent: "center",
               color: "#ffffff",
               boxShadow: "0 2px 8px rgba(2, 132, 199, 0.3)",
+              flexShrink: 0,
             }}
           >
             <Lucide.Building2 size={22} />
@@ -308,7 +323,7 @@ function LoginPageContent() {
               Digital Public Infrastructure for Land Governance • SIH 2026
             </div>
           </div>
-        </div>
+        </Link>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <LanguageSelector variant="compact" />
         </div>
