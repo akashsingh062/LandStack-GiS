@@ -27,11 +27,11 @@ function ServiceFormContent() {
   const info = SERVICE_INFO[type] || { name: type, icon: <Lucide.FileText size={24} />, department: "Revenue Department", fields: ["parcel"] };
 
   const [form, setForm] = useState({
-    parcel_ulpin: searchParams.get("parcel") || "IN-BR-PTN-0001051",
+    parcel_ulpin: searchParams.get("parcel") || "",
     purpose: "purchase",
     building_type: "residential",
-    area: "120",
-    floors: "2",
+    area: "",
+    floors: "1",
     period: "5",
     mutation_reason: "sale",
     new_owner: "",
@@ -193,7 +193,7 @@ function ServiceFormContent() {
           <h3 className="card-title" style={{ marginBottom: "var(--space-md)" }}>Parcel Information</h3>
           <div style={{ marginBottom: "var(--space-md)" }}>
             <label className="field-label" style={{ display: "block", marginBottom: 4 }}>Parcel ULPIN / ID *</label>
-            <input className="input" placeholder="e.g. IN-BR-PTN-0001051 or 1051" value={form.parcel_ulpin} onChange={(e) => setForm({ ...form, parcel_ulpin: e.target.value })} required />
+            <input className="input" placeholder="Enter Parcel ULPIN or Plot Number (e.g. 1051)" value={form.parcel_ulpin} onChange={(e) => setForm({ ...form, parcel_ulpin: e.target.value })} required />
           </div>
 
           {info.fields.includes("purpose") && (
