@@ -520,9 +520,7 @@ function LoginPageContent() {
             </button>
           </div>
 
-          {/* ======================================================== */}
-          {/* TAB 1: CITIZEN PORTAL (SIGNUP & LOGIN)                   */}
-          {/* ======================================================== */}
+          {/* Tab 1: Citizen Portal */}
           {activePortal === "CITIZEN" && (
             <div style={{ padding: "24px 28px" }}>
               {/* Sub-Switch: Login vs Sign Up */}
@@ -1171,9 +1169,7 @@ function LoginPageContent() {
             </div>
           )}
 
-          {/* ======================================================== */}
-          {/* TAB 2: DEPARTMENT OFFICIAL LOGIN (WITH DROPDOWN)         */}
-          {/* ======================================================== */}
+          {/* Tab 2: Department Official Portal */}
           {activePortal === "OFFICIAL" && (
             <div style={{ padding: "24px 28px" }}>
               <div
