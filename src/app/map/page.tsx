@@ -1117,12 +1117,12 @@ function MapContent() {
         <AnimatePresence>
           {(selectedParcel || loading) && (
             <motion.aside
-              initial={isMobile ? { y: "100%", opacity: 0 } : { x: 360, opacity: 0 }}
+              initial={isMobile ? { y: "100%", opacity: 0 } : { x: 460, opacity: 0 }}
               animate={{ x: 0, y: 0, opacity: 1 }}
-              exit={isMobile ? { y: "100%", opacity: 0 } : { x: 360, opacity: 0 }}
+              exit={isMobile ? { y: "100%", opacity: 0 } : { x: 460, opacity: 0 }}
               transition={{ type: "spring", damping: 28, stiffness: 300 }}
               style={{
-                width: isMobile ? "100%" : 350,
+                width: isMobile ? "100%" : 440,
                 position: isMobile ? "absolute" : "relative",
                 bottom: isMobile ? 0 : "auto",
                 left: isMobile ? 0 : "auto",
@@ -1171,10 +1171,10 @@ function MapContent() {
                   />
                 )}
                 {/* Header */}
-                <div style={{ padding: "10px 16px 8px", borderBottom: "1px solid #e2e8f0", flexShrink: 0, position: "relative" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                <div style={{ padding: "14px 20px 12px", borderBottom: "1px solid #e2e8f0", flexShrink: 0, position: "relative" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                      <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.08em", color: "#0f172a", textTransform: "uppercase" }}>PARCEL DETAILS</span>
+                      <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.06em", color: "#0f172a", textTransform: "uppercase" }}>PARCEL DETAILS</span>
                       {conflicts.length > 0 && (
                         <span style={{ background: "#fee2e2", color: "#dc2626", border: "1px solid #f87171", borderRadius: 4, padding: "1px 6px", fontSize: 9, fontWeight: 800, display: "inline-flex", alignItems: "center", gap: 3 }}>
                           <AlertTriangle size={10} /> CONFLICT
@@ -1201,18 +1201,18 @@ function MapContent() {
                   </div>
 
                   {/* Top Metadata Grid */}
-                  <div style={{ display: "grid", gridTemplateColumns: "1.3fr 1fr", gap: 8, background: "#f8fafc", padding: "8px 10px", borderRadius: 8, border: "1px solid #e2e8f0" }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1.3fr 1fr", gap: 14, background: "#f8fafc", padding: "12px 14px", borderRadius: 10, border: "1px solid #e2e8f0" }}>
                     <div>
-                      <div style={{ fontSize: 9, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.04em" }}>ULPIN</div>
-                      <div style={{ fontSize: 12, fontWeight: 800, color: "#0284c7", fontFamily: "monospace" }}>{p?.ulpin || `IN-BR-PTN-000${p?.survey_number || "1051"}`}</div>
-                      <div style={{ fontSize: 9, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.04em", marginTop: 4 }}>Area</div>
-                      <div style={{ fontSize: 11, fontWeight: 700, color: "#0f172a" }}>{areaAcres} Acre | {areaSqm} sq.m.</div>
+                      <div style={{ fontSize: 10, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.04em" }}>ULPIN</div>
+                      <div style={{ fontSize: 13, fontWeight: 800, color: "#0284c7", fontFamily: "monospace" }}>{p?.ulpin || `IN-BR-PTN-000${p?.survey_number || "1051"}`}</div>
+                      <div style={{ fontSize: 10, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.04em", marginTop: 6 }}>Area</div>
+                      <div style={{ fontSize: 12.5, fontWeight: 700, color: "#0f172a" }}>{areaAcres} Acre | {areaSqm} sq.m.</div>
                     </div>
                     <div>
-                      <div style={{ fontSize: 9, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.04em" }}>Survey No.</div>
-                      <div style={{ fontSize: 12, fontWeight: 800, color: "#0f172a" }}>P-{p?.survey_number || "1051"}</div>
-                      <div style={{ fontSize: 9, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.04em", marginTop: 4 }}>Village</div>
-                      <div style={{ fontSize: 11, fontWeight: 700, color: "#0f172a" }}>Mauza Arghawa (33)</div>
+                      <div style={{ fontSize: 10, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.04em" }}>Survey No.</div>
+                      <div style={{ fontSize: 13, fontWeight: 800, color: "#0f172a" }}>P-{p?.survey_number || "1051"}</div>
+                      <div style={{ fontSize: 10, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.04em", marginTop: 6 }}>Village</div>
+                      <div style={{ fontSize: 12.5, fontWeight: 700, color: "#0f172a" }}>Mauza Arghawa (33)</div>
                     </div>
                   </div>
                 </div>
@@ -1224,7 +1224,7 @@ function MapContent() {
                   style={{
                     display: "flex",
                     borderBottom: "1px solid #e2e8f0",
-                    padding: "0 8px",
+                    padding: "0 12px",
                     background: "#ffffff",
                     flexShrink: 0,
                     overflowX: "auto",
@@ -1268,8 +1268,8 @@ function MapContent() {
                           border: "none",
                           borderBottom: activeTab === tab ? "2px solid #0284c7" : "2px solid transparent",
                           color: activeTab === tab ? "#0284c7" : "#64748b",
-                          padding: "8px 4px",
-                          fontSize: 12,
+                          padding: "10px 6px",
+                          fontSize: 12.5,
                           fontWeight: activeTab === tab ? 700 : 500,
                           cursor: "pointer",
                           textTransform: "capitalize",
@@ -1284,7 +1284,7 @@ function MapContent() {
                 </div>
 
                 {/* Tab Content Body */}
-                <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 14, flex: 1, overflowY: "auto" }}>
+                <div style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 18, flex: 1, overflowY: "auto" }}>
                   {activeTab === "overview" && (
                     <>
                       {/* Plot Risk Profile Quick Banner */}
@@ -1305,7 +1305,7 @@ function MapContent() {
                                 : "#bbf7d0"
                           }`,
                           borderRadius: 8,
-                          padding: "9px 12px",
+                          padding: "12px 14px",
                           cursor: "pointer",
                           transition: "all 0.15s ease",
                         }}
@@ -1313,7 +1313,7 @@ function MapContent() {
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
                           <span
                             style={{
-                              fontSize: 10,
+                              fontSize: 11,
                               fontWeight: 800,
                               color: "#0f172a",
                               letterSpacing: "0.06em",
@@ -1352,7 +1352,7 @@ function MapContent() {
                             {riskProfile?.compositeLevel || "LOW"} RISK
                           </span>
                         </div>
-                        <div style={{ fontSize: 11, color: "#334155", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <div style={{ fontSize: 12, color: "#334155", display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 2 }}>
                           <span>
                             {riskProfile?.highCount || 0} High • {riskProfile?.mediumCount || 0} Med • {riskProfile?.lowCount || 0} Low Factors
                           </span>
@@ -1360,41 +1360,41 @@ function MapContent() {
                         </div>
                       </div>
                       {/* Properties Grid */}
-                      <div style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 11 }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", borderBottom: "1px solid #f1f5f9" }}>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 8, fontSize: 12.5 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid #f1f5f9" }}>
                           <span style={{ color: "#64748b" }}>Land Use</span>
                           <span style={{ fontWeight: 600, color: "#0f172a", display: "flex", alignItems: "center", gap: 4 }}>
                             <span style={{ width: 6, height: 6, borderRadius: "50%", background: LAND_TYPE_COLORS[p?.land_type] || "#eab308" }}></span>
                             {p?.land_type || "Agricultural"}
                           </span>
                         </div>
-                        <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", borderBottom: "1px solid #f1f5f9" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid #f1f5f9" }}>
                           <span style={{ color: "#64748b" }}>Revenue Khata</span>
                           <span style={{ fontWeight: 600, color: "#0f172a" }}>Khata #{ror?.khata_number || (100 + (Number(p?.survey_number || 1000) % 35))}</span>
                         </div>
-                        <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", borderBottom: "1px solid #f1f5f9" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid #f1f5f9" }}>
                           <span style={{ color: "#64748b" }}>Khesra / Plot</span>
                           <span style={{ fontWeight: 600, color: "#0f172a" }}>Khesra #{p?.survey_number || "1051"}</span>
                         </div>
-                        <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", borderBottom: "1px solid #f1f5f9" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid #f1f5f9" }}>
                           <span style={{ color: "#64748b" }}>Circle Office</span>
                           <span style={{ fontWeight: 600, color: "#0f172a" }}>Basopatti (Madhubani)</span>
                         </div>
-                        <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0" }}>
                           <span style={{ color: "#64748b" }}>Coordinates</span>
                           <span style={{ fontWeight: 600, color: "#0f172a", fontFamily: "monospace" }}>{coordsText}</span>
                         </div>
                       </div>
 
                       {/* Ownership Status Card */}
-                      <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, padding: 12 }}>
+                      <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, padding: "14px 16px" }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                          <span style={{ fontSize: 10, fontWeight: 800, color: "#64748b", letterSpacing: "0.06em" }}>OWNERSHIP STATUS</span>
+                          <span style={{ fontSize: 11, fontWeight: 800, color: "#64748b", letterSpacing: "0.06em" }}>OWNERSHIP STATUS</span>
                           <span style={{ fontSize: 10, fontWeight: 700, color: "#059669", background: "rgba(16, 185, 129, 0.12)", padding: "2px 6px", borderRadius: 4, display: "inline-flex", alignItems: "center", gap: 3 }}>
                             <Check size={11} strokeWidth={2.5} /> Verified
                           </span>
                         </div>
-                        <div style={{ fontSize: 11, display: "flex", flexDirection: "column", gap: 5 }}>
+                        <div style={{ fontSize: 12.5, display: "flex", flexDirection: "column", gap: 7 }}>
                           <div><span style={{ color: "#64748b" }}>Owner(s):</span> <strong style={{ color: "#0f172a" }}>{primaryOwner?.name || "Rahul Kumar Singh"}</strong></div>
                           {primaryOwner?.father_husband && (
                             <div><span style={{ color: "#64748b" }}>Relation:</span> <span style={{ color: "#334155" }}>{primaryOwner.father_husband}</span></div>
@@ -1409,7 +1409,7 @@ function MapContent() {
 
                       {/* Conflicting Claims Card (Dynamic) */}
                       {conflicts.length > 0 ? (
-                        <div style={{ background: "#fef2f2", border: "1px solid #fca5a5", borderRadius: 8, padding: 12 }}>
+                        <div style={{ background: "#fef2f2", border: "1px solid #fca5a5", borderRadius: 10, padding: "14px 16px" }}>
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
                             <span style={{ fontSize: 10, fontWeight: 800, color: "#dc2626", letterSpacing: "0.06em", display: "flex", alignItems: "center", gap: 4 }}>
                               <AlertTriangle size={12} color="#dc2626" /> CONFLICTING CLAIMS
@@ -1444,7 +1444,7 @@ function MapContent() {
 
                       {/* Active Legal Disputes / Court Cases (Dynamic) */}
                       {disputes.length > 0 ? (
-                        <div style={{ background: "#faf5ff", border: "1px solid #e9d5ff", borderRadius: 8, padding: 12 }}>
+                        <div style={{ background: "#faf5ff", border: "1px solid #e9d5ff", borderRadius: 10, padding: "14px 16px" }}>
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
                             <span style={{ fontSize: 10, fontWeight: 800, color: "#9333ea", letterSpacing: "0.06em", display: "flex", alignItems: "center", gap: 4 }}>
                               <AlertCircle size={12} /> COURT LITIGATION
@@ -1482,7 +1482,7 @@ function MapContent() {
 
                       {/* Encumbrance / Mortgages Card */}
                       {encumbrances.length > 0 ? (
-                        <div style={{ background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 8, padding: 12 }}>
+                        <div style={{ background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 10, padding: "14px 16px" }}>
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
                             <span style={{ fontSize: 10, fontWeight: 800, color: "#d97706", letterSpacing: "0.06em" }}>BANK MORTGAGE / CHARGE</span>
                             <span style={{ fontSize: 9, fontWeight: 700, color: "#b45309" }}>CERSAI Active</span>
@@ -1506,14 +1506,14 @@ function MapContent() {
                       )}
 
                       {/* Property Tax & Building Permissions Quick Status */}
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, fontSize: 10 }}>
-                        <div style={{ background: "#f8fafc", padding: 8, borderRadius: 6, border: "1px solid #e2e8f0" }}>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, fontSize: 11.5 }}>
+                        <div style={{ background: "#f8fafc", padding: "10px 12px", borderRadius: 8, border: "1px solid #e2e8f0" }}>
                           <div style={{ color: "#64748b" }}>Property Tax</div>
                           <div style={{ fontWeight: 700, color: taxes[0]?.status === "UNPAID" ? "#dc2626" : "#059669", marginTop: 2 }}>
                             {taxes[0]?.status === "UNPAID" ? "Arrears Due" : "Paid (2024-25)"}
                           </div>
                         </div>
-                        <div style={{ background: "#f8fafc", padding: 8, borderRadius: 6, border: "1px solid #e2e8f0" }}>
+                        <div style={{ background: "#f8fafc", padding: "10px 12px", borderRadius: 8, border: "1px solid #e2e8f0" }}>
                           <div style={{ color: "#64748b" }}>Building Sanction</div>
                           <div style={{ fontWeight: 700, color: buildingPermissions[0]?.status === "PENDING" ? "#d97706" : "#0284c7", marginTop: 2 }}>
                             {buildingPermissions[0]?.status === "PENDING" ? "Application Pending" : (buildingPermissions[0]?.status === "APPROVED" ? "Sanctioned G+2" : "Compliant")}
@@ -1524,7 +1524,7 @@ function MapContent() {
                   )}
 
                   {activeTab === "risk" && (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                       {/* Risk Header Card */}
                       <div
                         style={{
@@ -1541,8 +1541,8 @@ function MapContent() {
                                 ? "#fde68a"
                                 : "#bbf7d0"
                           }`,
-                          borderRadius: 8,
-                          padding: "10px 12px",
+                          borderRadius: 10,
+                          padding: "12px 14px",
                         }}
                       >
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
@@ -1577,7 +1577,7 @@ function MapContent() {
                             {riskProfile?.compositeLevel || "LOW"} RISK • {riskProfile?.compositeScore ?? 15}/100
                           </span>
                         </div>
-                        <div style={{ fontSize: 11, color: "#334155", lineHeight: 1.45 }}>
+                        <div style={{ fontSize: 12, color: "#334155", lineHeight: 1.5 }}>
                           {riskProfile?.recommendation || "All statutory land records, spatial boundaries, and encumbrance checks are verified."}
                         </div>
                         <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
@@ -1594,7 +1594,7 @@ function MapContent() {
                       </div>
 
                       {/* 12 Risk Factors List */}
-                      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                         {(riskProfile?.categories || []).map((cat: any) => {
                           const isExpanded = expandedRiskKey === cat.key;
                           const dotColor = cat.level === "HIGH" ? "#dc2626" : cat.level === "MEDIUM" ? "#ea580c" : "#16a34a";
@@ -1618,7 +1618,7 @@ function MapContent() {
                                   display: "flex",
                                   justifyContent: "space-between",
                                   alignItems: "center",
-                                  padding: "8px 10px",
+                                  padding: "10px 12px",
                                   cursor: "pointer",
                                   userSelect: "none",
                                   background: isExpanded ? "rgba(2, 132, 199, 0.04)" : "#ffffff",
@@ -1635,7 +1635,7 @@ function MapContent() {
                                       boxShadow: cat.level === "HIGH" ? "0 0 5px rgba(220, 38, 38, 0.6)" : "none",
                                     }}
                                   />
-                                  <span style={{ fontSize: 11, fontWeight: 700, color: "#0f172a" }}>
+                                  <span style={{ fontSize: 12, fontWeight: 700, color: "#0f172a" }}>
                                     {cat.name}
                                   </span>
                                 </div>
@@ -1658,7 +1658,7 @@ function MapContent() {
                               </div>
 
                               {isExpanded && (
-                                <div style={{ padding: "8px 10px 10px", borderTop: "1px solid #e2e8f0", background: "#f8fafc", fontSize: 11 }}>
+                                <div style={{ padding: "10px 12px 12px", borderTop: "1px solid #e2e8f0", background: "#f8fafc", fontSize: 12 }}>
                                   <div style={{ marginBottom: 6 }}>
                                     <div style={{ color: "#64748b", fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 2 }}>
                                       Trigger Summary
