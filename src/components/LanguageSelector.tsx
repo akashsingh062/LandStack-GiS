@@ -171,7 +171,7 @@ export function LanguageSelector({ variant = "compact", className = "" }: Langua
         </button>
       )}
 
-      {/* Crisp Solid Popover Menu (NO BLUR, 100% CLEAR, VISIBLE & READABLE) */}
+      {/* Language Popover Menu */}
       {isOpen && (
         <div
           className="no-scrollbar"
