@@ -842,119 +842,111 @@ function MapContent() {
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", width: "100%", background: "var(--bg-app, #ffffff)", color: "var(--text-primary, #0F172A)", overflow: "hidden", fontFamily: "Inter, -apple-system, sans-serif", position: "relative" }}>
       {/* 1. Map Top Toolbar */}
-      <header style={{ minHeight: isMobile ? 48 : 54, background: "#ffffff", borderBottom: "1px solid #e2e8f0", display: "flex", alignItems: "center", justifyContent: "space-between", padding: isMobile ? "6px 10px" : "0 16px", zIndex: 30, gap: 8 }}>
-        {/* Left: Navigation Hamburger & Search Input */}
-        <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, minWidth: 140, maxWidth: 540 }}>
-          {/* Main Navigation Hamburger Button */}
+      <header style={{ minHeight: isMobile ? 48 : 56, background: "#ffffff", borderBottom: "1px solid #e2e8f0", display: "flex", alignItems: "center", justifyContent: "space-between", padding: isMobile ? "6px 10px" : "0 20px", zIndex: 30, gap: 12 }}>
+        {/* Left: Navigation Hamburger + Brand */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0, minWidth: isMobile ? "auto" : 140 }}>
           <button
             onClick={toggleSidebar}
             title="Open Main Navigation Menu"
             aria-label="Toggle navigation menu"
             style={{
-              background: isSidebarOpen ? "#0284c7" : "#f1f5f9",
-              border: isSidebarOpen ? "1px solid #0284c7" : "1px solid #cbd5e1",
-              color: isSidebarOpen ? "#ffffff" : "#0f172a",
-              padding: isMobile ? "6px 9px" : "6px 12px",
-              borderRadius: 8,
-              fontSize: isMobile ? 12 : 13,
-              fontWeight: 700,
+              background: "transparent",
+              border: "none",
+              color: "#0f172a",
+              padding: 6,
+              borderRadius: 6,
               display: "flex",
               alignItems: "center",
-              gap: 7,
               cursor: "pointer",
               flexShrink: 0,
-              transition: "all 0.15s ease",
-              boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
             }}
-            onMouseEnter={(e) => {
-              if (!isSidebarOpen) {
-                e.currentTarget.style.background = "#e2e8f0";
-                e.currentTarget.style.borderColor = "#94a3b8";
-              }
+          >
+            <Menu size={20} />
+          </button>
+
+        </div>
+
+        {/* Center: Search Input */}
+        <div style={{ flex: 1, display: "flex", justifyContent: "center", maxWidth: 560, margin: "0 auto", position: "relative" }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              width: "100%",
+              background: "#f8fafc",
+              border: "1px solid #e2e8f0",
+              borderRadius: 24,
+              padding: isMobile ? "7px 12px" : "8px 16px",
+              gap: 10,
+              boxShadow: "inset 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03)",
+              transition: "all 0.2s ease",
             }}
-            onMouseLeave={(e) => {
-              if (!isSidebarOpen) {
-                e.currentTarget.style.background = "#f1f5f9";
-                e.currentTarget.style.borderColor = "#cbd5e1";
+            onFocus={(e) => {
+              e.currentTarget.style.borderColor = "#0284c7";
+              e.currentTarget.style.boxShadow = "inset 0 1px 3px rgba(0,0,0,0.04), 0 0 0 3px rgba(2,132,199,0.1)";
+            }}
+            onBlur={(e) => {
+              if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                e.currentTarget.style.borderColor = "#e2e8f0";
+                e.currentTarget.style.boxShadow = "inset 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03)";
               }
             }}
           >
-            <Menu size={18} style={{ color: isSidebarOpen ? "#ffffff" : "#0f172a" }} />
-            {!isMobile && (
-              <span style={{ fontWeight: 800, color: isSidebarOpen ? "#ffffff" : "var(--brand-primary, #0284c7)", letterSpacing: "-0.02em" }}>
-                LandStack
-              </span>
-            )}
-          </button>
-
-          {/* Search Input */}
-          <div style={{ flex: 1, position: "relative" }}>
-            <div style={{ display: "flex", alignItems: "center", background: "#f1f5f9", border: "1px solid #cbd5e1", borderRadius: 8, padding: "5px 10px", gap: 6 }}>
-              <Search size={14} style={{ color: "#64748b", flexShrink: 0 }} />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  handleSearch(e.target.value);
-                }}
-                placeholder={isMobile ? "Search ULPIN / Plot..." : "Search ULPIN, Survey No., Owner Name, Location..."}
-                style={{ background: "transparent", border: "none", outline: "none", color: "#0f172a", fontSize: 12, width: "100%" }}
-              />
-            </div>
-
-            {/* Search Dropdown */}
-            {showSearchDropdown && searchResults.length > 0 && (
-              <div style={{ position: "absolute", top: "100%", left: 0, right: 0, marginTop: 4, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 8, overflow: "hidden", zIndex: 100, boxShadow: "0 8px 24px rgba(0,0,0,0.12)" }}>
-                {searchResults.map((r) => (
-                  <div
-                    key={r.parcel_id}
-                    onClick={() => flyToSearchResult(r)}
-                    style={{ padding: "8px 12px", borderBottom: "1px solid #f1f5f9", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" }}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = "#f8fafc")}
-                    onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-                  >
-                    <div>
-                      <div style={{ fontSize: 12, fontWeight: 700, color: "#0284c7" }}>{r.ulpin}</div>
-                      <div style={{ fontSize: 10, color: "#64748b" }}>Survey #{r.survey_number} • {r.owner_name || "Bihar Land"}</div>
-                    </div>
-                    <span style={{ fontSize: 9, padding: "2px 6px", borderRadius: 4, background: (LAND_TYPE_COLORS[r.land_type] || "#3b82f6") + "22", color: LAND_TYPE_COLORS[r.land_type] || "#0284c7", border: `1px solid ${LAND_TYPE_COLORS[r.land_type] || "#0284c7"}55` }}>
-                      {r.land_type}
-                    </span>
-                  </div>
-                ))}
-              </div>
+            <Search size={15} style={{ color: "#94a3b8", flexShrink: 0 }} />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                handleSearch(e.target.value);
+              }}
+              placeholder={isMobile ? "Search ULPIN / Plot..." : "Search ULPIN, Survey No., Owner Name, Location..."}
+              style={{ background: "transparent", border: "none", outline: "none", color: "#0f172a", fontSize: 13, width: "100%", fontWeight: 400, letterSpacing: "-0.01em" }}
+            />
+            {searchQuery && (
+              <button
+                onClick={() => { setSearchQuery(""); setSearchResults([]); setShowSearchDropdown(false); }}
+                style={{ background: "transparent", border: "none", color: "#94a3b8", cursor: "pointer", padding: 2, display: "flex", alignItems: "center", flexShrink: 0, borderRadius: "50%", transition: "color 0.15s" }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = "#0f172a")}
+                onMouseLeave={(e) => (e.currentTarget.style.color = "#94a3b8")}
+              >
+                <X size={14} />
+              </button>
             )}
           </div>
+
+          {/* Search Dropdown */}
+          {showSearchDropdown && searchResults.length > 0 && (
+            <div style={{ position: "absolute", top: "100%", left: 0, right: 0, marginTop: 6, background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: 12, overflow: "hidden", zIndex: 100, boxShadow: "0 12px 32px rgba(0,0,0,0.12), 0 2px 6px rgba(0,0,0,0.06)" }}>
+              {searchResults.map((r, idx) => (
+                <div
+                  key={r.parcel_id}
+                  onClick={() => flyToSearchResult(r)}
+                  style={{ padding: "10px 16px", borderBottom: idx === searchResults.length - 1 ? "none" : "1px solid #f1f5f9", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", transition: "background 0.12s" }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = "#f8fafc")}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                >
+                  <div>
+                    <div style={{ fontSize: 12.5, fontWeight: 700, color: "#0284c7" }}>{r.ulpin}</div>
+                    <div style={{ fontSize: 10.5, color: "#64748b", marginTop: 1 }}>Survey #{r.survey_number} • {r.owner_name || "Bihar Land"}</div>
+                  </div>
+                  <span style={{ fontSize: 9, padding: "2px 8px", borderRadius: 6, background: (LAND_TYPE_COLORS[r.land_type] || "#3b82f6") + "18", color: LAND_TYPE_COLORS[r.land_type] || "#0284c7", border: `1px solid ${LAND_TYPE_COLORS[r.land_type] || "#0284c7"}40`, fontWeight: 600 }}>
+                    {r.land_type}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Right: Actions */}
-        <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 6 : 10, flexShrink: 0 }}>
+        {/* Right: Layers */}
+        <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 6 : 10, flexShrink: 0, minWidth: isMobile ? "auto" : 140, justifyContent: "flex-end" }}>
           <button
             onClick={() => setShowLayers(!showLayers)}
             style={{ background: showLayers ? "rgba(15, 23, 42, 0.08)" : "#f1f5f9", border: showLayers ? "1px solid #0f172a" : "1px solid #cbd5e1", color: "#0f172a", padding: isMobile ? "5px 8px" : "6px 12px", borderRadius: 6, fontSize: isMobile ? 11 : 12, fontWeight: 600, display: "flex", alignItems: "center", gap: 6, cursor: "pointer", transition: "all 0.15s ease" }}
           >
             <Layers size={14} /> {!isMobile && "Layers"}
           </button>
-
-          <button
-            onClick={() => router.push("/officer/conflicts")}
-            style={{ background: "#f1f5f9", border: "1px solid #cbd5e1", color: "#0f172a", padding: isMobile ? "5px 8px" : "6px 12px", borderRadius: 6, fontSize: isMobile ? 11 : 12, fontWeight: 600, display: "flex", alignItems: "center", gap: 6, cursor: "pointer", transition: "all 0.15s ease" }}
-          >
-            <SlidersHorizontal size={14} /> {!isMobile && "Filter"}
-          </button>
-
-
-
-          {!isMobile && (
-            <Link href="/login" style={{ textDecoration: "none" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 6, background: "#f1f5f9", border: "1px solid #cbd5e1", borderRadius: 6, padding: "5px 10px", color: "#0f172a", fontSize: 12 }}>
-                <User size={14} />
-                <span style={{ fontWeight: 600 }}>{currentUser?.title?.split(" ")[0] || "Officer"}</span>
-                <span style={{ fontSize: 10, color: "#64748b" }}>▾</span>
-              </div>
-            </Link>
-          )}
         </div>
       </header>
 
