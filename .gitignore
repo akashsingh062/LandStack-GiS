@@ -19,7 +19,7 @@ node_modules/
 .yarn/unplugged/
 .yarn/build-state.yml
 .yarn/install-state.gz
-workflow-prompt.txt
+hackathon-prepration.txt
 # 3. Next.js & Build Outputs
 .next/
 out/
