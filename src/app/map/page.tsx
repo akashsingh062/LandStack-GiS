@@ -1226,7 +1226,6 @@ function MapContent() {
                 </div>
 
                 {/* Tabs Bar */}
-                {/* Tabs Bar */}
                 <div
                   className="no-scrollbar"
                   style={{
