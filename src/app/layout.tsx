@@ -121,7 +121,7 @@ function Sidebar({ isOpen, onClose, isOverlay }: { isOpen: boolean; onClose: () 
                     background: "var(--bg-input)",
                     border: "1px solid var(--border-default)",
                     borderRadius: "var(--radius-md)",
-                    padding: "10px",
+                    padding: "12px",
                     cursor: "pointer",
                     transition: "border-color 0.15s ease, background 0.15s ease",
                   }}
@@ -130,9 +130,9 @@ function Sidebar({ isOpen, onClose, isOverlay }: { isOpen: boolean; onClose: () 
                     {getInitials(activeUser.name)}
                   </div>
                   <div className="sidebar-user-info" style={{ overflow: "hidden" }}>
-                    <div className="sidebar-user-name" style={{ fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <div className="sidebar-user-name" style={{ fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
                       <span>{activeUser.name}</span>
-                      <span style={{ fontSize: 10, color: "var(--brand-primary)", fontWeight: 600 }}>Profile →</span>
+                      <span style={{ fontSize: 11, color: "var(--brand-primary)", fontWeight: 600, flexShrink: 0 }}>Profile →</span>
                     </div>
                     <div className="sidebar-user-role" style={{ fontSize: 11, color: "var(--text-accent)", whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}>
                       {activeUser.title?.split("/")[0].trim() || activeUser.role}
