@@ -113,20 +113,20 @@ export default function ProfilePage() {
           setUserParcels((prev) => {
             const exists = prev.some((p) => p.parcel_id === found.parcel_id);
             if (!exists) {
-              setLinkSuccessMessage(`✓ Parcel ${found.ulpin || found.survey_number} successfully linked to your portfolio!`);
+              setLinkSuccessMessage(`Parcel ${found.ulpin || found.survey_number} successfully linked to your portfolio!`);
               return [found, ...prev];
             } else {
-              setLinkSuccessMessage(`ℹ️ Parcel ${found.ulpin || found.survey_number} is already in your portfolio.`);
+              setLinkSuccessMessage(`Parcel ${found.ulpin || found.survey_number} is already in your portfolio.`);
               return prev;
             }
           });
           setParcelSearchTerm("");
         } else {
-          setLinkSuccessMessage(`⚠️ No parcel found matching "${parcelSearchTerm.trim()}".`);
+          setLinkSuccessMessage(`No parcel found matching "${parcelSearchTerm.trim()}".`);
         }
       })
       .catch(() => {
-        setLinkSuccessMessage(`⚠️ Error searching parcel.`);
+        setLinkSuccessMessage(`Error searching parcel.`);
       })
       .finally(() => setLinkingParcel(false));
   };
@@ -195,7 +195,7 @@ export default function ProfilePage() {
               className="btn btn-primary"
               style={{ fontWeight: 700, padding: "10px 22px" }}
             >
-              <span>🔑 Login / Sign Up</span>
+              <Lucide.LogIn size={14} /> <span>Login / Sign Up</span>
             </Link>
             <Link href="/" className="btn btn-secondary">
               Back to Dashboard
@@ -307,7 +307,7 @@ export default function ProfilePage() {
                   className={`badge ${isCitizen ? "badge-info" : "badge-neutral"}`}
                   style={{ fontWeight: 700, fontSize: 11, padding: "4px 8px" }}
                 >
-                  {isCitizen ? "🇮🇳 Citizen Identity" : `🏛️ ${currentUser.role}`}
+                  {isCitizen ? "Citizen Identity" : currentUser.role}
                 </span>
                 <span
                   className="badge badge-success"
@@ -438,35 +438,45 @@ export default function ProfilePage() {
         {[
           {
             id: "overview",
-            label: "🪪 Identity & Credentials",
+            label: "Identity & Credentials",
             icon: <Lucide.User size={14} />,
+            activeColor: "#0284c7", // brand-primary (blue)
+            activeBg: "rgba(2, 132, 199, 0.1)",
           },
           {
             id: "jurisdiction",
-            label: "🗺️ Domicile & Jurisdiction",
+            label: "Domicile & Jurisdiction",
             icon: <Lucide.MapPin size={14} />,
+            activeColor: "#9333ea", // purple
+            activeBg: "rgba(147, 51, 234, 0.1)",
           },
           {
             id: "portfolio",
             label: isCitizen
-              ? "🏡 Land Holdings & Services"
-              : "📜 Statutory RBAC Authority",
+              ? "Land Holdings & Services"
+              : "Statutory RBAC Authority",
             icon: isCitizen ? (
               <Lucide.Home size={14} />
             ) : (
               <Lucide.Shield size={14} />
             ),
+            activeColor: "#16a34a", // emerald
+            activeBg: "rgba(22, 163, 74, 0.1)",
           },
           {
             id: "security",
-            label: "🛡️ Security & Privacy Ledger",
+            label: "Security & Privacy Ledger",
             icon: <Lucide.Lock size={14} />,
+            activeColor: "#d97706", // amber
+            activeBg: "rgba(217, 119, 6, 0.1)",
           },
-        ].map((tab) => (
+        ].map((tab) => {
+          const isActive = activeTab === tab.id;
+          return (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id as any)}
-            className={`btn ${activeTab === tab.id ? "btn-primary" : "btn-outline"}`}
+            className="btn"
             style={{
               fontSize: 12,
               padding: "8px 16px",
@@ -474,11 +484,17 @@ export default function ProfilePage() {
               display: "flex",
               alignItems: "center",
               gap: 6,
+              background: isActive ? tab.activeBg : "transparent",
+              color: isActive ? tab.activeColor : "var(--text-secondary)",
+              border: isActive ? `1px solid ${tab.activeColor}` : "1px solid var(--border-default)",
+              fontWeight: isActive ? 700 : 500,
+              transition: "all 0.2s ease",
             }}
           >
+            {tab.icon}
             {tab.label}
           </button>
-        ))}
+        )})}
       </div>
 
       {/* Tab 1: Overview & Identity */}
@@ -488,11 +504,15 @@ export default function ProfilePage() {
           animate={{ opacity: 1, y: 0 }}
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-            gap: "var(--space-md)",
+            gridTemplateColumns: "repeat(auto-fit, minmax(400px, 1fr))",
+            gap: "var(--space-xl)",
           }}
         >
-          <div className="card">
+          <motion.div
+            className="card"
+            whileHover={{ y: -4 }}
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
+          >
             <h3
               className="card-title"
               style={{
@@ -517,7 +537,7 @@ export default function ProfilePage() {
                 className="field-value"
                 style={{ fontFamily: "monospace", fontWeight: 600 }}
               >
-                🇮🇳 {currentUser.phone || ""}
+                +91 {currentUser.phone || ""}
               </span>
             </div>
             <div className="field-row">
@@ -536,11 +556,15 @@ export default function ProfilePage() {
             </div>
             <div className="field-row">
               <span className="field-label">Language Preference</span>
-              <span className="field-value">Hindi (हिन्दी) / English</span>
+              <span className="field-value">Hindi / English</span>
             </div>
-          </div>
+          </motion.div>
 
-          <div className="card">
+          <motion.div
+            className="card"
+            whileHover={{ y: -4 }}
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
+          >
             <h3
               className="card-title"
               style={{
@@ -588,11 +612,13 @@ export default function ProfilePage() {
               <span className="field-label">Account Status</span>
               <span className="badge badge-info">Standard Active</span>
             </div>
-          </div>
+          </motion.div>
 
           {/* Land Portfolio Summary Snapshot Card */}
-          <div
+          <motion.div
             className="card"
+            whileHover={{ y: -4 }}
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
             style={{
               gridColumn: "1 / -1",
               background: "var(--bg-elevated)",
@@ -891,7 +917,7 @@ export default function ProfilePage() {
                 Land Holdings tab.
               </p>
             )}
-          </div>
+          </motion.div>
         </motion.div>
       )}
 
@@ -906,7 +932,11 @@ export default function ProfilePage() {
             gap: "var(--space-md)",
           }}
         >
-          <div className="card">
+          <motion.div
+            className="card"
+            whileHover={{ y: -4 }}
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
+          >
             <h3
               className="card-title"
               style={{
@@ -947,9 +977,13 @@ export default function ProfilePage() {
                 {currentUser.jurisdiction}
               </span>
             </div>
-          </div>
+          </motion.div>
 
-          <div className="card">
+          <motion.div
+            className="card"
+            whileHover={{ y: -4 }}
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
+          >
             <h3
               className="card-title"
               style={{
@@ -989,7 +1023,7 @@ export default function ProfilePage() {
                 biharbhumi.bihar.gov.in
               </span>
             </div>
-          </div>
+          </motion.div>
         </motion.div>
       )}
 
@@ -1003,7 +1037,7 @@ export default function ProfilePage() {
           {isCitizen ? (
             <>
               {/* Connected Parcels */}
-              <div className="card">
+              <motion.div className="card" whileHover={{ y: -4 }} transition={{ type: "spring", stiffness: 400, damping: 25 }}>
                 <div
                   style={{
                     display: "flex",
@@ -1046,7 +1080,7 @@ export default function ProfilePage() {
                 <div
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+                    gridTemplateColumns: "repeat(3, 1fr)",
                     gap: 12,
                     marginBottom: "var(--space-md)",
                   }}
@@ -1160,7 +1194,7 @@ export default function ProfilePage() {
                     </button>
                   </form>
                   {linkSuccessMessage && (
-                    <div style={{ fontSize: 12, marginTop: 6, fontWeight: 600, color: linkSuccessMessage.startsWith("✓") ? "var(--status-success)" : "var(--status-warning)" }}>
+                    <div style={{ fontSize: 12, marginTop: 6, fontWeight: 600, color: linkSuccessMessage.startsWith("Parcel") && linkSuccessMessage.includes("linked") ? "var(--status-success)" : "var(--status-warning)" }}>
                       {linkSuccessMessage}
                     </div>
                   )}
@@ -1176,7 +1210,7 @@ export default function ProfilePage() {
                   <div
                     style={{
                       display: "grid",
-                      gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+                      gridTemplateColumns: "repeat(3, 1fr)",
                       gap: "var(--space-md)",
                     }}
                   >
@@ -1259,10 +1293,10 @@ export default function ProfilePage() {
                                 style={{ fontSize: 11, fontWeight: 700 }}
                               >
                                 {isDisputed
-                                  ? "✕ Title Disputed (Court Stay)"
+                                  ? "Title Disputed (Court Stay)"
                                   : isEncumbered
-                                    ? "🏦 Bank Mortgaged"
-                                    : "✓ Clear Title Sanctioned"}
+                                    ? "Bank Mortgaged"
+                                    : "Clear Title Sanctioned"}
                               </span>
                             </div>
 
@@ -1326,7 +1360,7 @@ export default function ProfilePage() {
                                 </strong>
                               </div>
                               <div style={{ gridColumn: "1 / -1", borderTop: "1px solid var(--border-default)", paddingTop: 4, fontSize: 11, color: "var(--text-secondary)" }}>
-                                👤 <strong>Recorded Raiyat:</strong> {p.owner_name || currentUser.name} ({p.father_husband || "S/o Shri Bihar Bhumi"})
+                                <Lucide.User size={12} style={{ display: "inline", verticalAlign: "middle", marginRight: 4 }} /> <strong>Recorded Raiyat:</strong> {p.owner_name || currentUser.name} ({p.father_husband || "S/o Shri Bihar Bhumi"})
                               </div>
                             </div>
                           </div>
@@ -1394,10 +1428,10 @@ export default function ProfilePage() {
                     </Link>
                   </div>
                 )}
-              </div>
+              </motion.div>
 
               {/* Active Service Applications */}
-              <div className="card">
+              <motion.div className="card" whileHover={{ y: -4 }} transition={{ type: "spring", stiffness: 400, damping: 25 }}>
                 <div
                   style={{
                     display: "flex",
@@ -1510,11 +1544,11 @@ export default function ProfilePage() {
                     building clearances.
                   </p>
                 )}
-              </div>
+              </motion.div>
             </>
           ) : (
             /* Staff Statutory Permissions Matrix */
-            <div className="card">
+            <motion.div className="card" whileHover={{ y: -4 }} transition={{ type: "spring", stiffness: 400, damping: 25 }}>
               <h3
                 className="card-title"
                 style={{
@@ -1602,7 +1636,7 @@ export default function ProfilePage() {
                   </div>
                 ))}
               </div>
-            </div>
+            </motion.div>
           )}
         </motion.div>
       )}
@@ -1618,7 +1652,7 @@ export default function ProfilePage() {
             gap: "var(--space-md)",
           }}
         >
-          <div className="card">
+          <motion.div className="card" whileHover={{ y: -4 }} transition={{ type: "spring", stiffness: 400, damping: 25 }}>
             <h3
               className="card-title"
               style={{
@@ -1655,9 +1689,9 @@ export default function ProfilePage() {
                 10.42.0.1 (NIC GovNet)
               </span>
             </div>
-          </div>
+          </motion.div>
 
-          <div className="card">
+          <motion.div className="card" whileHover={{ y: -4 }} transition={{ type: "spring", stiffness: 400, damping: 25 }}>
             <h3
               className="card-title"
               style={{
@@ -1709,7 +1743,7 @@ export default function ProfilePage() {
                 <Lucide.Download size={14} /> Export Cryptographic Audit Log
               </button>
             </div>
-          </div>
+          </motion.div>
         </motion.div>
       )}
 
